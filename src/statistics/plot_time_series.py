@@ -28,7 +28,7 @@ fig_pollutants.tight_layout()
 fig_pollutants.subplots_adjust(right=0.75)
 
 for index, pollutant in enumerate(pollutants):
-    for station_id, group in df.groupby(['stationId']):
+    for station_id, group in df.groupby(['station_id']):
         axes_pollutants[index].plot(pd.to_datetime(group['utc_time']), group[pollutant],
                                     'o', label=station_id, alpha=0.5)
         axes_pollutants[index].set_title(pollutant)
@@ -47,7 +47,7 @@ fig_weather.tight_layout()
 fig_weather.subplots_adjust(right=0.75)
 
 for index, measurement in enumerate(measurements):
-    for station_id, group in df.groupby(['stationId']):
+    for station_id, group in df.groupby(['station_id']):
         axes_weather[index].plot(pd.to_datetime(group['utc_time']), group[measurement],
                                  'o', label=station_id, alpha=0.5)
         axes_weather[index].set_title(measurement)
