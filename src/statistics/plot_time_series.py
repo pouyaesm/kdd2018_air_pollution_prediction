@@ -28,9 +28,9 @@ fig_pollutants.tight_layout()
 fig_pollutants.subplots_adjust(right=0.75)
 
 for index, pollutant in enumerate(pollutants):
-    for key, group in df.groupby(['stationId']):
+    for station_id, group in df.groupby(['stationId']):
         axes_pollutants[index].plot(pd.to_datetime(group['utc_time']), group[pollutant],
-                                    'o', label=key, alpha=0.5)
+                                    'o', label=station_id, alpha=0.5)
         axes_pollutants[index].set_title(pollutant)
         axes_pollutants[index].set_yscale('log')  # plot values in log for visibility of smaller values
 
@@ -47,9 +47,9 @@ fig_weather.tight_layout()
 fig_weather.subplots_adjust(right=0.75)
 
 for index, measurement in enumerate(measurements):
-    for key, group in df.groupby(['stationId']):
+    for station_id, group in df.groupby(['stationId']):
         axes_weather[index].plot(pd.to_datetime(group['utc_time']), group[measurement],
-                                 'o', label=key, alpha=0.5)
+                                 'o', label=station_id, alpha=0.5)
         axes_weather[index].set_title(measurement)
 
 # place the stations legend to the right of plots in two columns

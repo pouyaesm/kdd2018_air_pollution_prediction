@@ -17,21 +17,24 @@ plt.interactive(False)
 df = pd.read_csv(config[const.CLEAN_DATA], delimiter=';', low_memory=False)
 
 # Select unique stations
-stations = df.drop_duplicates(subset=['latitude', 'longitude'])
-
-# Select stations with known location
-stations = stations[np.isfinite(stations['latitude'])].reset_index(drop=True)
+stations = df.drop_duplicates(subset=['station_id']).reset_index()
 
 fig, axes = plt.subplots()
 
 # Plot station positions
-stations.plot(x='latitude', y='longitude', style='o', ax=axes)
-for s, name in enumerate(stations['stationId']):
+for station_type, group in stations.groupby(['station_type']):
+    axes.plot(group['latitude'], group['longitude'], 'o', label=station_type)
+axes.legend()
+
+# Write station names close to their position
+
+for s, name in enumerate(stations['station_id']):
     axes.annotate(name, (stations.loc[s, 'latitude'], stations.loc[s, 'longitude']))
+
 
 # Averages per station
 # average columns over each station
-aggDf = df.groupby('stationId', as_index=False).agg({'longitude': 'first', 'latitude': 'first',
+aggDf = df.groupby('station_id', as_index=False).agg({'longitude': 'first', 'latitude': 'first',
                                                      'temperature': 'mean', 'humidity': 'mean',
                                                      'wind_direction': 'mean', 'wind_speed': 'mean',
                                                      'pressure': 'mean', 'PM2.5': 'mean', 'PM10': 'mean',

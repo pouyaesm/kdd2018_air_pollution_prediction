@@ -1,13 +1,15 @@
 DEFAULT = 'DEFAULT'
 AIR_QUALITY = 'AIRQUALITY'
 WEATHER = 'WEATHER'
+STATIONS = 'STATIONS'
 CLEAN_DATA = 'CLEANDATA'
 
-STATION_ID = 'stationId'
+STATION_ID = 'station_id'
 
 def func():
     global DEFAULT
     global AIR_QUALITY
     global WEATHER
+    global STATIONS
     global CLEAN_DATA
     global STATION_ID

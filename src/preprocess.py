@@ -8,9 +8,10 @@ config = settings.config[const.DEFAULT]
 # read csv files
 qualityDf = pd.read_csv(config[const.AIR_QUALITY], low_memory=False)
 weatherDf = pd.read_csv(config[const.WEATHER], low_memory=False)
+stationsDf = pd.read_csv(config[const.STATIONS], low_memory=False)
 
-# rename station_id to stationId in weather table (the same as air quality table)
-weatherDf.rename(columns={'station_id': const.STATION_ID}, inplace=True)
+# rename stationId to station_id in quality table (the same as air weather table)
+qualityDf.rename(columns={'stationId': const.STATION_ID}, inplace=True)
 
 # remove _aq, _meo postfixes from station ids
 qualityDf[const.STATION_ID] = qualityDf[const.STATION_ID].str.replace('_.*', '')  # name_aq -> name
@@ -27,13 +28,23 @@ weatherDf.loc[weatherDf['wind_direction'] > 360] = np.nan  # value = [0, 360] de
 weatherDf.loc[weatherDf['humidity'] > 100] = np.nan  # value = [0, 100] percent
 
 # Merge air quality and weather data based on stationId-timestamp
-indices = ['stationId', 'utc_time']
+indices = [const.STATION_ID, 'utc_time']
 df = qualityDf.merge(weatherDf, how='outer', left_on=indices, right_on=indices,
                      suffixes=['_aq', '_meo'])
-# only keep the maximum of timestamp_aq and time_stamp_meo (that is ignore the NaN one)
+# only keep the max (non NaN) timestamp
 df["timestamp"] = df[["timestamp_aq", "timestamp_meo"]].max(axis=1)
 del df["timestamp_aq"]
 del df["timestamp_meo"]
+
+# Add air quality locations from stations file to the joined data set
+# Locations in df are from _meo data set, and locations from stations file are for _aq stations
+df = df.merge(stationsDf, how='outer', left_on=[const.STATION_ID], right_on=[const.STATION_ID],
+              suffixes=['_meo', '_aq'])
+# only keep the max (non NaN) location
+df["longitude"] = df[["longitude_aq", "longitude_meo"]].max(axis=1)
+df["latitude"] = df[["latitude_aq", "latitude_meo"]].max(axis=1)
+del df["longitude_aq"], df["longitude_meo"]
+del df["latitude_aq"], df["latitude_meo"]
 
 # print parts of table
 print('No. merged rows:', len(df.index))
