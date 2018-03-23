@@ -5,8 +5,9 @@ A tool for analysing and predicting air and weather data from KDD 2018 competiti
 ## Setup
 
 1. Copy `default.config.ini` to `config.ini`,
-2. Set an absolute address for air quality and mereological (weather) datasets,
-3. Set an absolute destination address for cleaned data set
+2. Set addresses for air quality and mereological (weather) data-sets,
+3. Set the address for station data-set,
+4. Set an address for the output of pre-processing (cleaned data)
 
 ## Execution
 
