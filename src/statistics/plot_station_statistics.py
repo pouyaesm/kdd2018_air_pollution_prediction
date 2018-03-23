@@ -1,6 +1,6 @@
 import settings
 import const
-import util
+from src import util
 import numpy as np
 import pandas as pd
 import matplotlib
