@@ -14,6 +14,10 @@ A tool for analysing and predicting air and weather data from KDD 2018 competiti
 1. Run `src/preprocess.py` to create the cleaned data set,
 2. Run scripts in `src/statistics` folder for basic insights into data
 
+## Examples
+
+1. See the basic examples of using tensorflow in `examples/tensorflow`
+
 ## On-going experiments
 
 1. `examples/simple_gcforest` is an experimental setup to use forests instead of neurons
