@@ -22,10 +22,10 @@ qualityDf['timestamp'] = np.divide(pd.to_datetime(qualityDf.utc_time).values.ast
 weatherDf['timestamp'] = np.divide(pd.to_datetime(weatherDf.utc_time).values.astype(np.int64), 1000000000)
 
 # ---- change invalid values to NaN -----
-weatherDf.loc[weatherDf['temperature'] > 100] = np.nan  # max value ~ 40 c
-weatherDf.loc[weatherDf['wind_speed'] > 100] = np.nan  # max value ~ 15 m/s
-weatherDf.loc[weatherDf['wind_direction'] > 360] = np.nan  # value = [0, 360] degree
-weatherDf.loc[weatherDf['humidity'] > 100] = np.nan  # value = [0, 100] percent
+weatherDf.loc[weatherDf['temperature'] > 100, 'temperature'] = np.nan  # max value ~ 40 c
+weatherDf.loc[weatherDf['wind_speed'] > 100, 'wind_speed'] = np.nan  # max value ~ 15 m/s
+weatherDf.loc[weatherDf['wind_direction'] > 360, 'wind_direction'] = np.nan  # value = [0, 360] degree
+weatherDf.loc[weatherDf['humidity'] > 100, 'humidity'] = np.nan  # value = [0, 100] percent
 
 # Merge air quality and weather data based on stationId-timestamp
 indices = [const.STATION_ID, 'utc_time']
@@ -45,6 +45,9 @@ df["longitude"] = df[["longitude_aq", "longitude_meo"]].max(axis=1)
 df["latitude"] = df[["latitude_aq", "latitude_meo"]].max(axis=1)
 del df["longitude_aq"], df["longitude_meo"]
 del df["latitude_aq"], df["latitude_meo"]
+
+# remove rows without station id which their existence is weird!
+df.dropna(subset=['station_id'], inplace=True)
 
 # print parts of table
 print('No. merged rows:', len(df.index))
