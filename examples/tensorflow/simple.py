@@ -8,5 +8,6 @@ k = tf.placeholder(2)
 multiply = tf.multiply(a, b)
 add = tf.add(multiply, k)
 
-
+print(sess.run(add, feed_dict={a: 2.5, b: 2.0}))
+print(sess.run([multiply, add], feed_dict={a: 2.5, b: 2.0}))
 
