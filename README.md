@@ -13,3 +13,9 @@ A tool for analysing and predicting air and weather data from KDD 2018 competiti
 
 1. Run `src/preprocess.py` to create the cleaned data set,
 2. Run scripts in `src/statistics` folder for basic insights into data
+
+## On going experiments
+
+1. `src/gcforest` is an experimental setup to use forests instead of neurons
+to do deep learning proposed [here](https://arxiv.org/abs/1702.08835),
+    * Current challenges: `xgboost dependency problem`
