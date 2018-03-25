@@ -40,7 +40,8 @@ tmtagsHistory
 *.sublime-workspace
 .bundle
 
-# project config file and data
+# project config file, data, and outputted models
 data
 config.ini
 external_libraries
+models

@@ -22,4 +22,4 @@ to do deep learning proposed in [this paper](https://arxiv.org/abs/1702.08835),
 
 ## On-going jobs
 
-1. Add training examples for tensorflow
+1. Add a training example for time series to `examples/tensorflow`

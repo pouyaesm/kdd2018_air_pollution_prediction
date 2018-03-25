@@ -11,4 +11,12 @@ def to_season(time):
 
 # normalize values of data-frame to [0, 1]
 def normalize(data_frame, multiplier):
-   return multiplier * (data_frame - data_frame.min()) / (data_frame.max() - data_frame.min())
+    return multiplier * (data_frame - data_frame.min()) / (data_frame.max() - data_frame.min())
+
+
+# convert float[s] to pretty
+def pretty(value, decimal):
+    if isinstance(value, list):
+        return [("%0." + str(decimal) + "f") % y for y in value]
+    else:
+        return ("%0." + str(decimal) + "f") % value
