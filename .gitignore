@@ -45,3 +45,4 @@ data
 config.ini
 external_libraries
 models
+logs
