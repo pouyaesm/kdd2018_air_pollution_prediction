@@ -49,8 +49,17 @@ del df["latitude_aq"], df["latitude_meo"]
 # remove rows without station id which their existence is weird!
 df.dropna(subset=['station_id'], inplace=True)
 
+# create set of stations that are meteorological but not air quality
+quality_stations = qualityDf.drop_duplicates(subset=[const.STATION_ID])[const.STATION_ID].tolist()
+weather_stations = weatherDf.drop_duplicates(subset=[const.STATION_ID])[const.STATION_ID].tolist()
+weather_only_stations = list(set(weather_stations) - set(quality_stations))
+
+# mark stations that are air quality stations with 1 and others with 0
+df['aq'] = 1 - df[const.STATION_ID].isin(weather_only_stations)
+
 # print parts of table
 print('No. merged rows:', len(df.index))
+print('No. weather only stations:', len(weather_only_stations))
 
 # Write cleaned data to csv file
 df.to_csv(config['cleanData'], sep=';', index=False)
