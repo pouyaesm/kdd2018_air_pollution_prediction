@@ -38,7 +38,7 @@ def window_for_predict(values: pd.Series, x_size, y_size, step):
     first_output = x_size  # index of first output right after first input
     window_x = window(values.loc[0:last_input], x_size, step)
     window_y = window(values.loc[first_output:values.size - 1].reset_index(drop=True), y_size, step)
-    return {'x': window_x, 'y': window_y}
+    return window_x, window_y
 
 
 def window(values: pd.Series, window_size, step):
@@ -94,3 +94,21 @@ def sample_time(time_series: pd.DataFrame, mode, value=None, time_key='time', ag
     # aggregate values based on mode
     sample = sample.groupby([time_key], as_index=False).agg(agg_op)
     return sample.reset_index(drop=True)
+
+
+def fill_missing(series: pd.Series, inplace=False):
+    """
+    Replace NaN values with average of nearest non NaN neighbors
+    :param series:
+    :param inplace:
+    :return:
+    """
+    return series.where(series == np.nan,
+             other=(series.fillna(method='ffill') + series.fillna(method='bfill')) / 2, inplace=inplace)
+
+
+def filter_by_time(df: pd.DataFrame, time_key
+                   , from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
+    filter_index = (df[time_key] >= from_time) & (df[time_key] <= to_time)
+    return df.loc[filter_index, :].reset_index(drop=True)
+

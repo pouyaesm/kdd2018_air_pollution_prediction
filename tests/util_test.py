@@ -19,6 +19,20 @@ class UtilTest(unittest.TestCase):
         # expectation: x -> 2 * (x - 2) / (6 - 2)
         self.assertEqual(normalized['values'].tolist(), [0, 0.5, 2])
 
+    # test filling of missing values (NaNs) by nearest non NaN neighbors
+    def test_fill_missing(self):
+        series = pd.Series([1, np.nan, np.nan, 3, np.nan])
+        filled = util.fill_missing(series)
+        expected = pd.Series([1, 2, 2, 3, np.nan])
+        pd_test.assert_series_equal(filled, expected)
+
+    def test_filter_by_time(self):
+        df = pd.DataFrame(data={'time': ['2019-01-01', '2020-01-01']})
+        df['time'] = pd.to_datetime(df['time'])
+        filtered = util.filter_by_time(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
+        expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
+        pd_test.assert_frame_equal(filtered, expected)
+
     # test splitting a time-series into (x, y) blocks for prediction
     def test_window(self):
         # test simple window
@@ -27,11 +41,11 @@ class UtilTest(unittest.TestCase):
         np_test.assert_array_equal(windowed, expected)
 
         # test windowing into (x, y) for prediction
-        windowed = util.window_for_predict(values=pd.Series([1, 2, 3, 4])
+        x, y = util.window_for_predict(values=pd.Series([1, 2, 3, 4])
                                            , x_size=2, y_size=1, step=1)
         expected = {'x': np.array([[1, 2], [2, 3]]), 'y': np.array([[3], [4]])}
-        np_test.assert_array_equal(windowed['x'], expected['x'])
-        np_test.assert_array_equal(windowed['y'], expected['y'])
+        np_test.assert_array_equal(x, expected['x'])
+        np_test.assert_array_equal(y, expected['y'])
 
     # test time sampling for different time modes
     def test_sample_time(self):
