@@ -112,3 +112,16 @@ def filter_by_time(df: pd.DataFrame, time_key
     filter_index = (df[time_key] >= from_time) & (df[time_key] <= to_time)
     return df.loc[filter_index, :].reset_index(drop=True)
 
+
+def SMAPE(forecast: pd.Series, actual: pd.Series):
+    """
+    SMAPE error for predicted array compared to array of real values
+    :param forecast:
+    :param actual:
+    :return:
+    """
+    if forecast.size != actual.size:
+        raise ValueError("length forecast {%s} <> {%s} actual" % (forecast.size, actual.size))
+    diff = np.abs(np.subtract(forecast, actual))
+    avg = (np.abs(actual) + np.abs(forecast)) / 2
+    return (100 / len(forecast)) * np.sum(diff / avg)

@@ -33,6 +33,14 @@ class UtilTest(unittest.TestCase):
         expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
         pd_test.assert_frame_equal(filtered, expected)
 
+    # test SMAPE evaluation criterion
+    def test_SMAPE_error(self):
+        forecast = pd.Series([1, 2, 3, 4])
+        actual = pd.Series([0, 2, 3, 6])
+        # 100 / 4 * (1 / 0.5 + 2 / 5)
+        error = util.SMAPE(forecast, actual)
+        self.assertEqual(error, 60)
+
     # test splitting a time-series into (x, y) blocks for prediction
     def test_window(self):
         # test simple window
