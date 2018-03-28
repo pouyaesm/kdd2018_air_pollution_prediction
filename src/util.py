@@ -124,4 +124,4 @@ def SMAPE(forecast: pd.Series, actual: pd.Series):
         raise ValueError("length forecast {%s} <> {%s} actual" % (forecast.size, actual.size))
     diff = np.abs(np.subtract(forecast, actual))
     avg = (np.abs(actual) + np.abs(forecast)) / 2
-    return (100 / len(forecast)) * np.sum(diff / avg)
+    return (100 / forecast.size) * np.sum(diff / avg)
