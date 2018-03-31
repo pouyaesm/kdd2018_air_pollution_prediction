@@ -109,8 +109,13 @@ def fill_missing(series: pd.Series, inplace=False):
 
 def filter_by_time(df: pd.DataFrame, time_key
                    , from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
-    filter_index = (df[time_key] >= from_time) & (df[time_key] <= to_time)
+    filter_index = index_of_time(df, time_key, from_time, to_time)
     return df.loc[filter_index, :].reset_index(drop=True)
+
+
+def index_of_time(df: pd.DataFrame, time_key
+                  , from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
+    return (df[time_key] >= from_time) & (df[time_key] <= to_time)
 
 
 def SMAPE(forecast: pd.Series, actual: pd.Series):
