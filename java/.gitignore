@@ -1,0 +1,10 @@
+# Java intellij idea files #
+############################
+.idea
+target
+*.iml
+META-INF
+out
+
+# Project local configurations #
+################################
