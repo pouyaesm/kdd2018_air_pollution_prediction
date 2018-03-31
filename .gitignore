@@ -47,11 +47,3 @@ config.ini
 external_libraries
 models
 logs
-
-# Java intellij idea files #
-############################
-.idea
-target
-*.iml
-META-INF
-out
