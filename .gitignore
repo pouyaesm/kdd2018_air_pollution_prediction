@@ -40,9 +40,18 @@ tmtagsHistory
 *.sublime-workspace
 .bundle
 
-# project config file, data, and outputted models
+# project config file, data, and outputted models #
+###################################################
 data
 config.ini
 external_libraries
 models
 logs
+
+# Java intellij idea files #
+############################
+.idea
+target
+*.iml
+META-INF
+out
