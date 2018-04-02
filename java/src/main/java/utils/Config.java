@@ -2,7 +2,11 @@ package utils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,18 +17,23 @@ import java.util.Map;
 public class Config {
     final static String address = "config.json";
     private static HashMap<String, String> config;
-    final static String CLEAN_DATA = "CLEAN_DATA";
+    public final static String CLEAN_DATA = "cleanData";
+    public final static String SPARK_TEMP = "sparkTemp";
+    public final static String SPARK_WAREHOUSE = "sparkWarehouse";
+    public final static String HADOOP = "hadoop";
 
-    Config(){
+    private static void load(){
         try {
             config = new ObjectMapper()
-                    .readValue(address, new TypeReference<Map<String, String>>() {});
+                    .readValue(Util.read(address),
+                            new TypeReference<Map<String, String>>() {});
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static String get(String key){
+        if(config == null) load();
         return config.getOrDefault(key, "");
     }
 }

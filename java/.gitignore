@@ -6,6 +6,7 @@ target
 META-INF
 out
 
-# Project local configurations #
+# Project local configurations and resources#
 ################################
 config.json
+data/
