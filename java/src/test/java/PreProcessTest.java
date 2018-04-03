@@ -1,9 +1,8 @@
-import org.apache.spark.sql.Row;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.junit.Assert;
 import org.junit.Test;
-import preprocess.KDDDataSet;
-import preprocess.Record;
+import preprocess.ObservedData;
+import preprocess.ObservedRow;
 import utils.Util;
 
 import java.util.ArrayList;
@@ -12,8 +11,8 @@ public class PreProcessTest {
 
     @Test
     public void testLoadSortGroup(){
-        KDDDataSet data = new KDDDataSet();
-        JavaPairRDD<String, ArrayList<Record>> stationData = data
+        ObservedData data = new ObservedData();
+        JavaPairRDD<String, ArrayList<ObservedRow>> stationData = data
                 .load("src/test/data/beijing_17_18_sample.csv")
                 .sort() // sort by time ascending
                 .group().get(); // group each station into a list keyed by station stationId

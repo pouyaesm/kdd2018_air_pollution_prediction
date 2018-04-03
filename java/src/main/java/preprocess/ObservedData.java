@@ -11,7 +11,7 @@ import utils.SparkSetup;
 
 import java.util.ArrayList;
 
-public class KDDDataSet {
+public class ObservedData {
 
     private Dataset<Row> records;
 
@@ -28,7 +28,7 @@ public class KDDDataSet {
             .add(PM10, "float")
             .add(O3, "float");
 
-    public KDDDataSet load(String address){
+    public ObservedData load(String address){
         SparkSession sparkSession = SparkSetup.getSession();
         this.records = sparkSession.read()
                 .format("csv")
@@ -44,7 +44,7 @@ public class KDDDataSet {
      * Sort the data-set by timestamp
      * @return
      */
-    public KDDDataSet sort(){
+    public ObservedData sort(){
         records = records.sort(functions.col("utc_time").asc_nulls_last());
         return this;
     }
@@ -53,21 +53,21 @@ public class KDDDataSet {
      * gGroup each station into a list keyed by station id
      * @return
      */
-    public KDDDataPair group(){
+    public ObservedPair group(){
         JavaRDD<Row> rdd = records.toJavaRDD();
         // aggregate rows of a station id into a list of rows per station
-        JavaPairRDD<String, ArrayList<Record>> stationRDD = rdd.mapToPair(
+        JavaPairRDD<String, ArrayList<ObservedRow>> stationRDD = rdd.mapToPair(
                 // row -> (stationId, record)
                 row -> {
-                    Record record = new Record(row);
+                    ObservedRow record = new ObservedRow(row);
                     return new Tuple2<>(row.get(0).toString(), record);
                 }
         ).aggregateByKey(new ArrayList<>(),
-                (ArrayList<Record> list,Record record)
+                (ArrayList<ObservedRow> list, ObservedRow record)
                         -> { list.add(record);return list; },
-                (ArrayList<Record> list1, ArrayList<Record> list2)
+                (ArrayList<ObservedRow> list1, ArrayList<ObservedRow> list2)
                         -> {list1.addAll(list2); return list1;});
-        return new KDDDataPair(stationRDD);
+        return new ObservedPair(stationRDD);
     }
 
     /**

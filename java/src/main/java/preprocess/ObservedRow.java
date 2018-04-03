@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 
-public class Record implements Serializable{
+public class ObservedRow implements Serializable{
     public String stationId; // station stationId
     public String utcTime;
 //    public long timestamp;
@@ -25,29 +25,29 @@ public class Record implements Serializable{
      */
     public boolean[] filled = new boolean[3];
 
-    public Record(){
+    public ObservedRow(){
 
     }
 
-    public Record(String stationId, String utcTime, float PM25, float PM10, float O3){
+    public ObservedRow(String stationId, String utcTime, float PM25, float PM10, float O3){
         init(stationId, utcTime, PM25, PM10, O3);
     }
 
-    Record(Row row){
-        init(row.getString(KDDDataSet.index(KDDDataSet.STATION_ID)),
-                row.getString(KDDDataSet.index(KDDDataSet.TIME)),
-                Util.toFloat(row.get(KDDDataSet.index(KDDDataSet.PM25))),
-                Util.toFloat(row.get(KDDDataSet.index(KDDDataSet.PM10))),
-                Util.toFloat(row.get(KDDDataSet.index(KDDDataSet.O3))));
+    ObservedRow(Row row){
+        init(row.getString(ObservedData.index(ObservedData.STATION_ID)),
+                row.getString(ObservedData.index(ObservedData.TIME)),
+                Util.toFloat(row.get(ObservedData.index(ObservedData.PM25))),
+                Util.toFloat(row.get(ObservedData.index(ObservedData.PM10))),
+                Util.toFloat(row.get(ObservedData.index(ObservedData.O3))));
     }
 
     private void init(String stationId, String utcTime, float PM25, float PM10, float O3){
         this.stationId = stationId;
         this.utcTime  = utcTime;
 //        this.timestamp = Util.toTime(this.utcTime);
-        this.values[Record.PM25] = PM25;
-        this.values[Record.PM10] = PM10;
-        this.values[Record.O3] = O3;
+        this.values[ObservedRow.PM25] = PM25;
+        this.values[ObservedRow.PM10] = PM10;
+        this.values[ObservedRow.O3] = O3;
         this.count = 1;
     }
 
@@ -57,7 +57,7 @@ public class Record implements Serializable{
      * @param value
      * @return
      */
-    public Record fill(int index, float value){
+    public ObservedRow fill(int index, float value){
         values[index] = value;
         filled[index] = true;
         return this;
@@ -69,7 +69,7 @@ public class Record implements Serializable{
      * @param indices index of values to be filled
      * @return
      */
-    public static ArrayList<Record> fill(ArrayList<Record> list, int[] indices){
+    public static ArrayList<ObservedRow> fill(ArrayList<ObservedRow> list, int[] indices){
         int size = list.size();
         for(int index: indices) {
             int first = -1; // first null value
@@ -108,13 +108,13 @@ public class Record implements Serializable{
      * @param list
      * @return
      */
-    public static ArrayList<Record> sampleTime(ArrayList<Record> list, String mode){
+    public static ArrayList<ObservedRow> sampleTime(ArrayList<ObservedRow> list, String mode){
         Function<String, String> getGroup = new MyDateFormat(mode).getGrouper();
         // Aggregate / Sample the time
-        HashMap<String, Record> aggregate = new HashMap<>(list.size());
-        for(Record record : list){
+        HashMap<String, ObservedRow> aggregate = new HashMap<>(list.size());
+        for(ObservedRow record : list){
             String group = getGroup.apply(record.utcTime);
-            Record groupAggregate = aggregate.get(group);
+            ObservedRow groupAggregate = aggregate.get(group);
             if(groupAggregate == null){
                 record.utcTime = group; // the representative of group time
                 aggregate.put(group, record); // first record of this group
@@ -127,11 +127,11 @@ public class Record implements Serializable{
             }
             groupAggregate.count++;
         }
-        ArrayList<Record> samples = new ArrayList<>(aggregate.values());
+        ArrayList<ObservedRow> samples = new ArrayList<>(aggregate.values());
         // sort aggregated samples by time
         Collections.sort(samples, Comparator.comparing(r1 -> r1.utcTime));
         // Change aggregate sum to average using the recorded group size
-        for(Record sample : samples){
+        for(ObservedRow sample : samples){
             for(int v = 0 ; v < sample.values.length ; v++){
                 sample.values[v] /= sample.count;
             }

@@ -17,7 +17,8 @@ import java.util.Map;
 public class Config {
     final static String address = "config.json";
     private static HashMap<String, String> config;
-    public final static String CLEAN_DATA = "cleanData";
+    public final static String BEIJING_OBSERVED = "beijingObserved";
+    public final static String LONDON_OBSERVED = "londonObserved";
     public final static String SPARK_TEMP = "sparkTemp";
     public final static String SPARK_WAREHOUSE = "sparkWarehouse";
     public final static String HADOOP = "hadoop";

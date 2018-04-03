@@ -4,25 +4,25 @@ import org.apache.spark.api.java.JavaPairRDD;
 
 import java.util.ArrayList;
 
-public class KDDDataPair {
+public class ObservedPair {
     /**
      * Each key is a station id with time-sorted array of measurement reports
      */
-    JavaPairRDD<String, ArrayList<Record>> data;
+    JavaPairRDD<String, ArrayList<ObservedRow>> data;
 
-    public KDDDataPair(JavaPairRDD<String, ArrayList<Record>> data){
+    public ObservedPair(JavaPairRDD<String, ArrayList<ObservedRow>> data){
         this.data = data;
     }
 
     /**
      * Fill missing values with the average of nearest values
-     * Assuming the lists are sorted by time ascending
+     * Assuming the lists are sorted ascending by time
      * @return
      */
-    public KDDDataPair fill(final String[] columns){
+    public ObservedPair fill(final String[] columns){
         data.mapValues(list -> {
             for(String column : columns) {
-                int colIndex = KDDDataSet.index(column);
+                int colIndex = ObservedData.index(column);
 
             } // each column
             return list;
@@ -30,7 +30,7 @@ public class KDDDataPair {
         return this;
     }
 
-    public JavaPairRDD<String, ArrayList<Record>> get(){
+    public JavaPairRDD<String, ArrayList<ObservedRow>> get(){
         return data;
     }
 }

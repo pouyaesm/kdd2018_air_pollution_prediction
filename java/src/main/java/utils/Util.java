@@ -2,17 +2,12 @@ package utils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
-import preprocess.Record;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Locale;
 import java.util.TimeZone;
 
 public class Util {

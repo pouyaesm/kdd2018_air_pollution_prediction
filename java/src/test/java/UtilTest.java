@@ -1,9 +1,6 @@
 import org.junit.Assert;
 import org.junit.Test;
-import preprocess.Record;
 import utils.Util;
-
-import java.util.ArrayList;
 
 public class UtilTest {
 
