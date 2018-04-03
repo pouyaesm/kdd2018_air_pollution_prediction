@@ -41,7 +41,7 @@ public class ObservedData {
     }
 
     /**
-     * Sort the data-set by timestamp
+     * Sort the data-set by timestamp ascending
      * @return
      */
     public ObservedData sort(){
@@ -50,7 +50,7 @@ public class ObservedData {
     }
 
     /**
-     * gGroup each station into a list keyed by station id
+     * Group each station into a list of rows keyed by station id
      * @return
      */
     public ObservedPair group(){
