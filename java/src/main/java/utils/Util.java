@@ -1,14 +1,21 @@
 package utils;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import org.apache.spark.sql.DataFrameReader;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.StructType;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.*;
 
 public class Util {
 
@@ -26,6 +33,65 @@ public class Util {
             e.printStackTrace();
         }
         return "";
+    }
+
+    /**
+     * Read a cell separated data (e.g., CSV) with[out] a header
+     * @param address
+     * @param delimiter
+     * @return
+     */
+    public static ArrayList<String[]> read(String address, String delimiter){
+        ArrayList<String[]> list = new ArrayList<>();
+        try(BufferedReader br = new BufferedReader(new FileReader(address))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // limit = -1 to keep empty values at the end of line
+                list.add(line.split(delimiter, -1));
+            }
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Read csv into Spark DataSet
+     * @param address
+     * @return
+     */
+    public static Dataset<Row> read(String address, StructType schema){
+        SparkSession sparkSession = SparkSetup.getSession();
+        DataFrameReader dataFrameReader = sparkSession.read()
+                .option("mode", "PERMISSIVE")
+                .option("header", "true");
+        if(schema == null){
+            dataFrameReader.option("inferSchema", "true");
+        }else{
+            dataFrameReader.schema(schema);
+        }
+        return dataFrameReader.csv(address);
+    }
+
+    /**
+     * Read a cell separated data from URL
+     * @param address
+     * @param separator
+     * @return
+     */
+    public static ArrayList<String[]> readURL(String address, String separator){
+        ArrayList<String[]> list = new ArrayList<>();
+        try {
+            URL url = new URL(address);
+            Scanner scn = new Scanner(url.openStream());
+            while(scn.hasNextLine()){
+                // limit = -1 to keep empty values at the end of line
+                list.add(scn.nextLine().split(separator, -1));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     public static long toTime(String dateTime){
@@ -51,6 +117,31 @@ public class Util {
         }catch (Exception exp){
             return Float.NEGATIVE_INFINITY;
         }
+    }
+
+    public static int toInt(Object value){
+        try{
+            return Integer.parseInt(value.toString());
+        }catch (Exception exp){
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    public static String toString(Object value){
+        try{
+            return value.toString();
+        }catch (Exception exp){
+            return "";
+        }
+    }
+
+    /**
+     * Convert array of values to Scala seq
+     * @param values
+     * @return
+     */
+    public static Seq<String> toSeq(String... values) {
+        return JavaConversions.asScalaBuffer(Lists.newArrayList(values));
     }
 
     public static double SMAPE(){

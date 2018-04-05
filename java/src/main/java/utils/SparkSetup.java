@@ -23,8 +23,7 @@ public class SparkSetup {
             sparkSession = SparkSession
                     .builder()
                     .appName("Java Spark Lab")
-                    .master("local[4]")
-                    .config("spark.sql.warehouse.dir", Config.get(Config.SPARK_WAREHOUSE))
+//                    .config("spark.sql.warehouse.dir", Config.get(Config.SPARK_WAREHOUSE))
                     .sparkContext(getContext())
                     .getOrCreate();
         }
@@ -39,7 +38,7 @@ public class SparkSetup {
                     .set("spark.hadoop.validateOutputSpecs", "false") //to allow overwrites
                     .set("spark.local.dir", Config.get(Config.SPARK_TEMP));
             sparkContext = new SparkContext(sparkConf);
-            sparkContext.setLogLevel("WARN");//only output warnings
+            sparkContext.setLogLevel("ERROR");//only output errors
         }
         return sparkContext;
     }

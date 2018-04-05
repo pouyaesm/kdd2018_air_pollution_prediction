@@ -2,6 +2,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import utils.Util;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 public class UtilTest {
 
     @Test
@@ -18,5 +21,7 @@ public class UtilTest {
                 Util.toFloat(null), 0);
         Assert.assertEquals(Float.NEGATIVE_INFINITY,
                 Util.toFloat("a12"), 0);
+        Assert.assertEquals(Float.NEGATIVE_INFINITY,
+                Util.toFloat(""), 0);
     }
 }

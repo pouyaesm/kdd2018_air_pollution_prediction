@@ -4,13 +4,13 @@ import org.apache.spark.api.java.JavaPairRDD;
 
 import java.util.ArrayList;
 
-public class ObservedPair {
+public class ObsPair {
     /**
      * Each key is a station id with time-sorted array of measurement reports
      */
-    JavaPairRDD<String, ArrayList<ObservedRow>> data;
+    JavaPairRDD<String, ArrayList<BJRow>> data;
 
-    public ObservedPair(JavaPairRDD<String, ArrayList<ObservedRow>> data){
+    public ObsPair(JavaPairRDD<String, ArrayList<BJRow>> data){
         this.data = data;
     }
 
@@ -19,18 +19,16 @@ public class ObservedPair {
      * Assuming the lists are sorted ascending by time
      * @return
      */
-    public ObservedPair fill(final String[] columns){
+    public ObsPair fill(){
         data.mapValues(list -> {
-            for(String column : columns) {
-                int colIndex = ObservedData.index(column);
-
-            } // each column
+            list =  BJRow.fill(list, new int[]{
+                    KDDRow.index(KDDRow.PM25), KDDRow.index(KDDRow.PM10), KDDRow.index(KDDRow.O3)});
             return list;
         });
         return this;
     }
 
-    public JavaPairRDD<String, ArrayList<ObservedRow>> get(){
+    public JavaPairRDD<String, ArrayList<BJRow>> get(){
         return data;
     }
 }
