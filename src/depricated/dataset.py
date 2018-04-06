@@ -51,5 +51,5 @@ class DataSet:
             , ['utc_time', pollutant]].reset_index(drop=True)
             pollutants[station]['is_nan'] = pollutants[station][pollutant].isnull()
             # fill missing values with nearest neighbors (same column)
-            util.fill_missing(pollutants[station][pollutant], inplace=True)
+            util.fill(pollutants[station][pollutant], inplace=True)
         return pollutants

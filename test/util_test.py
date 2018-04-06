@@ -33,10 +33,10 @@ class UtilTest(unittest.TestCase):
         pd_test.assert_frame_equal(filled, expected)
 
     # test filling of missing values (NaNs) by nearest non NaN neighbors
-    def test_fill_missing(self):
-        series = pd.Series([1, np.nan, np.nan, 3, np.nan])
-        filled = util.fill_missing(series)
-        expected = pd.Series([1, 2, 2, 3, np.nan])
+    def test_fill(self):
+        series = pd.Series([np.nan, 1, np.nan, np.nan, 3, np.nan], index=[10, 11, 12, 13, 14, 15])
+        filled = util.fill(series)
+        expected = pd.Series([1.0, 1.0, 2.0, 2.0, 3.0, 3.0], index=[10, 11, 12, 13, 14, 15])
         pd_test.assert_series_equal(filled, expected)
 
     def test_filter_by_time(self):

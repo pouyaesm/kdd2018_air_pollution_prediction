@@ -4,9 +4,10 @@ import io
 import requests
 import pandas as pd
 from src import util
+from src.preprocess import PreProcess
 
 
-class PreProcessLD:
+class PreProcessLD(PreProcess):
 
     def __init__(self, config):
         self.config = config  # location of input/output files
@@ -34,9 +35,6 @@ class PreProcessLD:
         aq = pd.read_csv(self.config[const.LD_AQ], low_memory=False)
         aq_rest = pd.read_csv(self.config[const.LD_AQ_REST], low_memory=False)
 
-        # Read air quality live data
-        aq_live = self.get_live()
-
         # Remove the index column (first) of aq
         aq.drop(aq.columns[0], axis=1, inplace=True)
 
@@ -46,21 +44,25 @@ class PreProcessLD:
 
         aq_rest.rename(columns={'Station_ID': const.ID, 'MeasurementDateGMT': const.TIME}, inplace=True)
         aq_rest.rename(columns={col: col.split(' ')[0] for col in aq_rest.columns}, inplace=True)
-
-        aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
-        aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
-        aq_live.drop(columns=['id'], inplace=True)
-
         # Drop last two completely null columns from aq_rest
         aq_rest.dropna(axis=1, how='all', inplace=True)
 
+        # Append aq_rest to aq
+        aq = aq.append(aq_rest, ignore_index=True, verify_integrity=True)
+
+        if self.config[const.LD_READ_LIVE]:
+            # Read air quality live data
+            aq_live = self.get_live()
+            aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
+            aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
+            aq_live.drop(columns=['id'], inplace=True)
+            # Append aq_live to aq
+            aq = aq.append(aq_live, ignore_index=True, verify_integrity=True)
+
         # Remove reports with no station_id
         aq.dropna(subset=[const.ID], inplace=True)
-        aq_rest.dropna(subset=[const.ID], inplace=True)
 
-        # Append aq_rest and aq_live to aq, drop possible duplicates
-        aq = aq.append(aq_rest, ignore_index=True, verify_integrity=True)\
-            .append(aq_live, ignore_index=True, verify_integrity=True)
+        # Drop possible duplicates
         aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Convert datetime strings to objects
@@ -74,6 +76,9 @@ class PreProcessLD:
 
         # mark missing values
         self.missing = self.obs.isna().astype(int)
+
+        # set unique station ids temporary for filling iteration
+        self.stations[const.ID] = self.obs[const.ID].unique()
 
         return self
 
@@ -93,6 +98,7 @@ class PreProcessLD:
 if __name__ == "__main__":
     pre_process = PreProcessLD(settings.config[const.DEFAULT])
     pre_process.process()
+    pre_process.fill()
     print('No. observed rows:', len(pre_process.obs))
     # print('No. stations:', len(pre_process.stations),
     #       ', only weather:', pre_process.stations['station_type'].count())

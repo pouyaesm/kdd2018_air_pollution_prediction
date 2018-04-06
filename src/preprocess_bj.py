@@ -5,9 +5,10 @@ import pandas as pd
 import numpy as np
 import requests
 from src import util
+from src.preprocess import PreProcess
 
 
-class PreProcessBJ:
+class PreProcessBJ(PreProcess):
 
     def __init__(self, config):
         self.config = config  # location of input/output files
@@ -27,6 +28,14 @@ class PreProcessBJ:
         print('Live aQ has been read, count:', len(aq_live))
         meo_live = pd.read_csv(io.StringIO(requests.get(meo_url).content.decode('utf-8')))
         print('Live meO has been read, count:', len(meo_live))
+
+        # Make live data columns compatible with offline data
+        aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
+        aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
+        aq_live.drop(columns=['id'], inplace=True)
+        meo_live.rename(columns={'time': const.TIME}, inplace=True)
+        meo_live.drop(columns=['id'], inplace=True)
+
         return aq_live, meo_live
 
     def process(self):
@@ -39,27 +48,20 @@ class PreProcessBJ:
             .append(pd.read_csv(self.config[const.BJ_AQ_REST], low_memory=False)
                     , ignore_index=True, verify_integrity=True)
 
-        # Real live data from APIs
-        aq_live, meo_live = self.get_live()
+        # Read beijing station meteorology data, append live data
+        meo = pd.read_csv(self.config[const.BJ_MEO], low_memory=False)
 
         # Rename stationId to station_id in quality table (the same as air weather table)
         aq.rename(columns={'stationId': const.ID}, inplace=True)
 
-        # Make live data columns compatible with offline data
-        aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
-        aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
-        aq_live.drop(columns=['id'], inplace=True)
-        meo_live.rename(columns={'time': const.TIME}, inplace=True)
-        meo_live.drop(columns=['id'], inplace=True)
-
-        # Append live data to offline data, and drop possible overlapped duplicates
-        aq = aq.append(aq_live, ignore_index=True, verify_integrity=True)
-        aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
-
-        # Read beijing station meteorology data, append live data
-        meo = pd.read_csv(self.config[const.BJ_MEO], low_memory=False)\
-            .append(meo_live, ignore_index=True, verify_integrity=True)
-        meo.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
+        # Real live data from APIs, and append it to offline data
+        if self.config[const.BJ_READ_LIVE]:
+            aq_live, meo_live = self.get_live()
+            aq = aq.append(aq_live, ignore_index=True, verify_integrity=True)
+            meo = meo.append(meo_live, ignore_index=True, verify_integrity=True)
+            # drop possible overlapped duplicates
+            aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
+            meo.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Read type and position of air quality stations
         aq_stations = pd.read_csv(self.config[const.BJ_AQ_STATIONS], low_memory=False)
@@ -94,8 +96,9 @@ class PreProcessBJ:
         self.obs.dropna(subset=[const.ID], inplace=True)
 
         # Sort data first based on station ids (alphabetically), then by time ascending
-        self.stations.sort_values(const.ID, ascending=True)
-        self.obs.sort_values([const.ID, const.TIME], ascending=True)
+        # Using inplace creates a warning!
+        self.stations = self.stations.sort_values(const.ID, ascending=True)
+        self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
 
         # mark missing values
         self.missing = self.obs.isna().astype(int)
@@ -118,6 +121,7 @@ class PreProcessBJ:
 if __name__ == "__main__":
     pre_process = PreProcessBJ(settings.config[const.DEFAULT])
     pre_process.process()
+    pre_process.fill()
     print('No. observed rows:', len(pre_process.obs))
     print('No. stations:', len(pre_process.stations),
           ', only weather:', pre_process.stations['station_type'].count())

@@ -96,15 +96,36 @@ def sample_time(time_series: pd.DataFrame, mode, value=None, time_key='time', ag
     return sample.reset_index(drop=True)
 
 
-def fill_missing(series: pd.Series, inplace=False):
+def fill(series: pd.Series):
     """
-    Replace NaN values with average of nearest non NaN neighbors
+        Replace NaN values with average of nearest non NaN neighbors
     :param series:
-    :param inplace:
     :return:
     """
-    return series.where(series == np.nan,
-             other=(series.fillna(method='ffill') + series.fillna(method='bfill')) / 2, inplace=inplace)
+    filled = series.tolist()
+    region = [-1, -1]  # temporary interval of NaN values
+    last_item = len(filled) - 1
+    for index, value in enumerate(filled):
+        # Keep track of current interval of NaN values
+        if np.isnan(value):
+            if region[0] == -1:
+                region[0] = index
+            region[1] = index
+        # Replace NaN values with their boundary average
+        # when a NaN interval is started, and is ending with a non-NaN value or end of list
+        if region[0] != -1 and (not np.isnan(value) or index == last_item):
+            first_value = filled[region[0] - 1] if region[0] > 0 else np.nan
+            last_value = filled[region[1] + 1] if region[1] < last_item else np.nan
+            # Duplicate one boundary to another if one does not exist
+            # this happens when a series starts or ends with a NaN
+            first_value = last_value if np.isnan(first_value) else first_value
+            last_value = first_value if np.isnan(last_value) else last_value
+            # Set average of boundaries for the NaN interval
+            filled[region[0]:region[1] + 1] = [(first_value + last_value) / 2] * (region[1] - region[0] + 1)
+            # Reset NaN interval indicators
+            region[0] = region[1] = -1
+
+    return pd.Series(data=filled, index=series.index, name=series.name)
 
 
 def filter_by_time(df: pd.DataFrame, time_key
@@ -163,4 +184,5 @@ def write(df: pd.DataFrame, address):
     :param address:
     :return:
     """
-    df.to_csv(address, sep=';', index=False, date_format='%Y-%m-%d %H:%M:%S', chunksize=1000000)
+    df.to_csv(address, sep=';', index=False, float_format='%.1f'
+              , date_format='%Y-%m-%d %H:%M:%S', chunksize=1000000)
