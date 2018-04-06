@@ -1,7 +1,8 @@
 import settings
 import const
+import io
+import requests
 import pandas as pd
-import numpy as np
 from src import util
 
 
@@ -13,6 +14,17 @@ class PreProcessLD:
         self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
         self.stations = pd.DataFrame()  # all stations with their attributes such as type and position
 
+    @staticmethod
+    def get_live():
+        """
+            Load live observed data from KDD APIs
+        :return:
+        """
+        aq_url = "https://biendata.com/competition/airquality/ld/2018-03-01-0/2018-06-01-0/2k0d1d8"
+        aq_live = pd.read_csv(io.StringIO(requests.get(aq_url).content.decode('utf-8')))
+        print('Live aQ has been read, count:', len(aq_live))
+        return aq_live
+
     def process(self):
         """
             Load and PreProcess the data
@@ -22,14 +34,23 @@ class PreProcessLD:
         aq = pd.read_csv(self.config[const.LD_AQ], low_memory=False)
         aq_rest = pd.read_csv(self.config[const.LD_AQ_REST], low_memory=False)
 
+        # Read air quality live data
+        aq_live = self.get_live()
+
         # Remove the index column (first) of aq
         aq.drop(aq.columns[0], axis=1, inplace=True)
 
         # Rename columns to conventional ones, and change 'value (ug/m3)' to 'value'
         aq.rename(columns={'MeasurementDateGMT': const.TIME}, inplace=True)
         aq.rename(columns={col: col.split(' ')[0] for col in aq.columns}, inplace=True)
+
         aq_rest.rename(columns={'Station_ID': const.ID, 'MeasurementDateGMT': const.TIME}, inplace=True)
         aq_rest.rename(columns={col: col.split(' ')[0] for col in aq_rest.columns}, inplace=True)
+
+        aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
+        aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
+        aq_live.drop(columns=['id'], inplace=True)
+
         # Drop last two completely null columns from aq_rest
         aq_rest.dropna(axis=1, how='all', inplace=True)
 
@@ -37,8 +58,10 @@ class PreProcessLD:
         aq.dropna(subset=[const.ID], inplace=True)
         aq_rest.dropna(subset=[const.ID], inplace=True)
 
-        # Append aq_rest to aq
-        aq = aq.append(aq_rest, ignore_index=True, verify_integrity=True)
+        # Append aq_rest and aq_live to aq, drop possible duplicates
+        aq = aq.append(aq_rest, ignore_index=True, verify_integrity=True)\
+            .append(aq_live, ignore_index=True, verify_integrity=True)
+        aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Convert datetime strings to objects
         aq[const.TIME] = pd.to_datetime(aq[const.TIME], utc=True)
