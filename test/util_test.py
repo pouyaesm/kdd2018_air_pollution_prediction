@@ -19,6 +19,19 @@ class UtilTest(unittest.TestCase):
         # expectation: x -> 2 * (x - 2) / (6 - 2)
         self.assertEqual(normalized['values'].tolist(), [0, 0.5, 2])
 
+    # test dropping columns ending with a specific string
+    def test_drop_columns(self):
+        df = pd.DataFrame(data={'col_1': [1, 2], 'col_2': [2, 3]})
+        expected = pd.DataFrame(data={'col_1': [1, 2]})
+        pd_test.assert_frame_equal(util.drop_columns(df, end_with='_2'), expected)
+
+    # test filling nan columns with another columns
+    def test_fillna(self):
+        df = pd.DataFrame(data={'col_1': [np.nan], 'col_2': [10]}, dtype=np.int64)
+        filled = util.fillna(df, target=['col_1'], source=['col_2'])
+        expected = pd.DataFrame(data={'col_1': [10], 'col_2': [10]})
+        pd_test.assert_frame_equal(filled, expected)
+
     # test filling of missing values (NaNs) by nearest non NaN neighbors
     def test_fill_missing(self):
         series = pd.Series([1, np.nan, np.nan, 3, np.nan])

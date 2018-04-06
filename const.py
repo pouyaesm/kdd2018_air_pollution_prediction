@@ -1,15 +1,21 @@
 DEFAULT = 'DEFAULT'
-AIR_QUALITY = 'AIRQUALITY'
-WEATHER = 'WEATHER'
-STATIONS = 'STATIONS'
-CLEAN_DATA = 'CLEANDATA'
+BJ_AQ = 'BJ_AQ'
+BJ_AQ_REST = 'BJ_AQ_REST'
+BJ_AQ_STATIONS = 'BJ_AQ_STATIONS'
+BJ_MEO = 'BJ_MEO'
+BJ_MEO_GRID = 'BJ_MEO_GRID'
+BJ_OBSERVED = 'BJ_OBSERVED'
+BJ_STATIONS = 'BJ_STATIONS'
+ID = 'station_id'
+TIME = 'utc_time'
 
-STATION_ID = 'station_id'
 
 def func():
     global DEFAULT
-    global AIR_QUALITY
-    global WEATHER
-    global STATIONS
-    global CLEAN_DATA
-    global STATION_ID
+    global BJ_AQ
+    global BJ_MEO
+    global BJ_STATIONS
+    global BJ_OBSERVED
+    global BJ_STATIONS
+    global ID
+    global TIME

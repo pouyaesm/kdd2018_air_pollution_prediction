@@ -130,3 +130,27 @@ def SMAPE(forecast: pd.Series, actual: pd.Series):
     diff = np.abs(np.subtract(forecast, actual))
     avg = (np.abs(actual) + np.abs(forecast)) / 2
     return (100 / forecast.size) * np.sum(diff / avg)
+
+
+def drop_columns(df: pd.DataFrame, end_with):
+    """
+        Drop all columns that their name ends with end_with
+    :param df:
+    :param end_with:
+    :return:
+    """
+    df = df[df.columns.drop(list(df.filter(regex=end_with)))]
+    return df
+
+
+def fillna(df: pd.DataFrame, target, source):
+    """
+        Fill some columns with another columns in a dataframe
+    :param df:
+    :param target: array of column names
+    :param source: array of column names
+    :return: pd.DataFrame
+    """
+    for index, target in enumerate(target):
+        df[target].fillna(df[source[index]], inplace=True)
+    return df
