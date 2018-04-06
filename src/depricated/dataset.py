@@ -4,10 +4,9 @@ import pandas as pd
 
 
 class DataSet:
-    def __init__(self, config):
-        self.obs = {}
+    def __init__(self):
+        self.data = {}
         self.stations = {}
-        self.config = config
 
     def load(self, from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
         """
@@ -20,14 +19,22 @@ class DataSet:
         config = settings.config[const.DEFAULT]
 
         # read csv files
-        data = pd.read_csv(config[const.BJ_OBSERVED], sep=";", low_memory=False)
-        self.stations = pd.read_csv(config[const.BJ_STATIONS], sep=";", low_memory=False)
+        data = pd.read_csv(config[const.CLEAN_DATA], sep=";", low_memory=False)
 
-        self.obs = data
+        # discard report of stations that do not report air quality
+        data = data.loc[data['aq'] == 1, :]
 
-        return self
+        # filter a specific time interval
+        data['utc_time'] = pd.to_datetime(data['utc_time'])
+        data = util.filter_by_time(data, time_key='utc_time', from_time=from_time, to_time=to_time)
 
-    def fill_missing(self):
+        # list of stations to iterate and predict
+        stations = data.drop_duplicates(subset=[const.STATION_ID])[const.STATION_ID].tolist()
+
+        # assign to class variables
+        self.data = data
+        self.stations = stations
+
         return self
 
     def get_pollutant(self, pollutant):
@@ -46,8 +53,3 @@ class DataSet:
             # fill missing values with nearest neighbors (same column)
             util.fill_missing(pollutants[station][pollutant], inplace=True)
         return pollutants
-
-
-if __name__ == "__main__":
-    pre_process = DataSet(settings.config[const.DEFAULT])
-    print("Done!")

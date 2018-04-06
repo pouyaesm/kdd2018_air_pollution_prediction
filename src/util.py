@@ -154,3 +154,13 @@ def fillna(df: pd.DataFrame, target, source):
     for index, target in enumerate(target):
         df[target].fillna(df[source[index]], inplace=True)
     return df
+
+
+def write(df: pd.DataFrame, address):
+    """
+        Write CSV data efficiently
+    :param df:
+    :param address:
+    :return:
+    """
+    df.to_csv(address, sep=';', index=False, date_format='%Y-%m-%d %H:%M:%S', chunksize=1000000)

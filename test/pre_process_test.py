@@ -1,6 +1,6 @@
 import unittest
 import const
-from src.pre_process import PreProcess
+from src.preprocess_bj import PreProcessBJ
 
 
 class PreProcessTest(unittest.TestCase):
@@ -14,5 +14,5 @@ class PreProcessTest(unittest.TestCase):
             const.BJ_AQ_STATIONS: base_dir + "beijing_AirQuality_Stations_sample.csv",
             const.BJ_MEO: base_dir + "beijing_17_18_meo_sample.csv",
         }
-        pre_process = PreProcess(config).load()
+        pre_process = PreProcessBJ(config).process()
         self.assertEqual(9, len(pre_process.obs))
