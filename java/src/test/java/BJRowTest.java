@@ -1,14 +1,12 @@
 import org.apache.spark.sql.Row;
 import org.junit.Assert;
 import org.junit.Test;
-import preprocess.BJRow;
-import preprocess.BJFiles;
-import preprocess.KDDRow;
+import depricated.BJRow;
+import depricated.BJFiles;
+import depricated.KDDRow;
 import utils.Config;
 import utils.MyDateFormat;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class BJRowTest {

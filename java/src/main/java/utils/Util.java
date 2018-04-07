@@ -3,6 +3,7 @@ package utils;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import org.apache.parquet.Strings;
 import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -43,12 +44,15 @@ public class Util {
      */
     public static ArrayList<String[]> read(String address, String delimiter){
         ArrayList<String[]> list = new ArrayList<>();
-        try(BufferedReader br = new BufferedReader(new FileReader(address))) {
+        try(BufferedReader br = new BufferedReader(new FileReader(address), 32768)) {
+            long time = System.currentTimeMillis();
             String line;
             while ((line = br.readLine()) != null) {
                 // limit = -1 to keep empty values at the end of line
                 list.add(line.split(delimiter, -1));
             }
+            long duration = (System.currentTimeMillis() - time) / 1000;
+            System.out.println(duration + " sec for " + address);
         }catch (IOException e) {
             e.printStackTrace();
         }
@@ -144,12 +148,27 @@ public class Util {
         return JavaConversions.asScalaBuffer(Lists.newArrayList(values));
     }
 
+    public static void write(ArrayList<String[]> records, String address) {
+        int bufferSize = 16777216 ; // 16M
+        File file = new File(address);
+        try {
+            FileWriter writer = new FileWriter(file);
+            BufferedWriter bufferedWriter = new BufferedWriter(writer, bufferSize);
+            for (String[] record: records) {
+                bufferedWriter.write(Strings.join(record, ";"));
+            }
+            bufferedWriter.flush();
+            bufferedWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * Fast write of array of strings to a file
      * @param records
      * @param address
      */
-    private static void write(List<String> records, String address) {
+    public static void write(List<String> records, String address) {
         int bufferSize = 16777216 ; // 16M
         File file = new File(address);
         try {

@@ -1,9 +1,10 @@
-package preprocess;
+package depricated;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.types.StructType;
 import static org.apache.spark.sql.functions.regexp_replace;
+
 import scala.Tuple2;
 import utils.Config;
 import utils.SparkSetup;

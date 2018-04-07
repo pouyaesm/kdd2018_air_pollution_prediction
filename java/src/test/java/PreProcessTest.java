@@ -1,8 +1,8 @@
 import org.apache.spark.api.java.JavaPairRDD;
 import org.junit.Assert;
 import org.junit.Test;
-import preprocess.BJRow;
-import preprocess.BJFiles;
+import depricated.BJRow;
+import depricated.BJFiles;
 import utils.Util;
 
 import java.util.ArrayList;

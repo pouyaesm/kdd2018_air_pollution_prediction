@@ -13,7 +13,8 @@ import java.util.Map;
 public class Config {
     final static String address = "config.json";
     private static HashMap<String, String> config;
-    public final static String BEIJING_OBSERVED = "beijingObserved";
+    public final static String BEIJING_OBS = "beijingObs";
+    public final static String BEIJING_OBS_FILLED = "beijingObsFilled";
     public final static String BEIJING_OBS_AQ = "beijingObsAq";
     public final static String BEIJING_OBS_MEO = "beijingObsMeo";
     public final static String BEIJING_OBS_AQ_REST = "beijingObsAqRest";
