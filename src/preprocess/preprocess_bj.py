@@ -101,7 +101,7 @@ class PreProcessBJ(PreProcess):
         self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
 
         # mark missing values
-        # self.missing = self.obs.isna().astype(int)
+        self.missing = self.obs.isna().astype(int)
 
         return self
 
@@ -112,7 +112,7 @@ class PreProcessBJ(PreProcess):
         """
         # Write pre-processed data to csv file
         util.write(self.obs, self.config[const.BJ_OBSERVED])
-        # util.write(self.missing, self.config[const.BJ_OBSERVED_MISS])
+        util.write(self.missing, self.config[const.BJ_OBSERVED_MISS])
         # self.missing.to_csv(, sep=';', index=False)
         self.stations.to_csv(self.config[const.BJ_STATIONS], sep=';', index=False)
         print('Data saved.')
@@ -121,7 +121,7 @@ class PreProcessBJ(PreProcess):
 if __name__ == "__main__":
     pre_process = PreProcessBJ(settings.config[const.DEFAULT])
     pre_process.process()
-    # pre_process.fill()
+    pre_process.fill()
     print('No. observed rows:', len(pre_process.obs))
     print('No. stations:', len(pre_process.stations),
           ', only weather:', pre_process.stations['station_type'].count())
