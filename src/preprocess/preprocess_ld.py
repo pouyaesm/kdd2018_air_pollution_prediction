@@ -4,7 +4,7 @@ import io
 import requests
 import pandas as pd
 from src import util
-from src.preprocess import PreProcess
+from src.preprocess.preprocess import PreProcess
 
 
 class PreProcessLD(PreProcess):

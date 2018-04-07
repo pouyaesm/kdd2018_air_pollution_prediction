@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import requests
 from src import util
-from src.preprocess import PreProcess
+from src.preprocess.preprocess import PreProcess
 
 
 class PreProcessBJ(PreProcess):

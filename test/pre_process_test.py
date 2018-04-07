@@ -1,6 +1,6 @@
 import unittest
 import const
-from src.preprocess_bj import PreProcessBJ
+from src.preprocess.preprocess_bj import PreProcessBJ
 
 
 class PreProcessTest(unittest.TestCase):
