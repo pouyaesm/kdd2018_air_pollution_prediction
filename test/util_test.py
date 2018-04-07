@@ -35,9 +35,9 @@ class UtilTest(unittest.TestCase):
     # test filling of missing values (NaNs) by nearest non NaN neighbors
     def test_fill(self):
         series = pd.Series([np.nan, 1, np.nan, np.nan, 3, np.nan], index=[10, 11, 12, 13, 14, 15])
-        filled = util.fill(series)
+        util.fill(series, inplace=True)
         expected = pd.Series([1.0, 1.0, 2.0, 2.0, 3.0, 3.0], index=[10, 11, 12, 13, 14, 15])
-        pd_test.assert_series_equal(filled, expected)
+        pd_test.assert_series_equal(series, expected)
 
     def test_filter_by_time(self):
         df = pd.DataFrame(data={'time': ['2019-01-01', '2020-01-01']})
