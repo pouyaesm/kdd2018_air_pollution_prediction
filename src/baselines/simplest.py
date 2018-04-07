@@ -3,8 +3,8 @@
         f(t, d + 2) = f(t, d + 1) = a(t, d)
 """
 
-from src import util
-from src.dataset import DataSet
+from src import util, reform
+from src.depricated.dataset import DataSet
 import pandas as pd
 import numpy as np
 
@@ -21,7 +21,7 @@ for pollutant in pollutants:
         time_series = pollutant_data[station][pollutant]
         # extract (xt-1, xt) blocks as (x, y),
         # xt-1 (x) is considered as the estimation of real value xt (y)
-        x, y = util.window_for_predict(time_series, 2, 4, 2)
+        x, y = reform.window_for_predict(time_series, 2, 4, 2)
         forecast = np.array(x).reshape(len(x))
         actual = np.array(y).reshape(len(y))
         df = pd.DataFrame(data={'forecast': forecast, 'actual': actual}, columns=columns)

@@ -1,5 +1,8 @@
 DEFAULT = 'DEFAULT'
 
+OBSERVED = 'OBSERVED'
+STATIONS = 'STATIONS'
+
 BJ_AQ = 'BJ_AQ'
 BJ_AQ_REST = 'BJ_AQ_REST'
 BJ_AQ_STATIONS = 'BJ_AQ_STATIONS'
@@ -23,6 +26,7 @@ TIME = 'utc_time'
 
 def func():
     global DEFAULT
+    global OBSERVED
     global BJ_AQ
     global BJ_MEO
     global BJ_STATIONS
