@@ -9,12 +9,6 @@ from src.preprocess.preprocess import PreProcess
 
 class PreProcessLD(PreProcess):
 
-    def __init__(self, config):
-        self.config = config  # location of input/output files
-        self.obs = pd.DataFrame()  # merged observed air quality and meteorology data per station
-        self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
-        self.stations = pd.DataFrame()  # all stations with their attributes such as type and position
-
     @staticmethod
     def get_live():
         """
@@ -75,7 +69,7 @@ class PreProcessLD(PreProcess):
         self.obs = aq.sort_values([const.ID, const.TIME], ascending=True)
 
         # mark missing values
-        self.missing = self.obs.isna().astype(int)
+        # self.missing = self.obs.isna().astype(int)
 
         # set unique station ids temporary for filling iteration
         self.stations[const.ID] = self.obs[const.ID].unique()
@@ -89,7 +83,7 @@ class PreProcessLD(PreProcess):
         """
         # Write pre-processed data to csv file
         util.write(self.obs, self.config[const.LD_OBSERVED])
-        util.write(self.missing, self.config[const.LD_OBSERVED_MISS])
+        # util.write(self.missing, self.config[const.LD_OBSERVED_MISS])
         # self.missing.to_csv(, sep=';', index=False)
         self.stations.to_csv(self.config[const.LD_STATIONS], sep=';', index=False)
         print('Data saved.')
@@ -98,7 +92,7 @@ class PreProcessLD(PreProcess):
 if __name__ == "__main__":
     pre_process = PreProcessLD(settings.config[const.DEFAULT])
     pre_process.process()
-    pre_process.fill()
+    # pre_process.fill()
     print('No. observed rows:', len(pre_process.obs))
     # print('No. stations:', len(pre_process.stations),
     #       ', only weather:', pre_process.stations['station_type'].count())

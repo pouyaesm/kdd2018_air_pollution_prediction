@@ -144,6 +144,27 @@ public class Util {
         return JavaConversions.asScalaBuffer(Lists.newArrayList(values));
     }
 
+    /**
+     * Fast write of array of strings to a file
+     * @param records
+     * @param address
+     */
+    private static void write(List<String> records, String address) {
+        int bufferSize = 16777216 ; // 16M
+        File file = new File(address);
+        try {
+            FileWriter writer = new FileWriter(file);
+            BufferedWriter bufferedWriter = new BufferedWriter(writer, bufferSize);
+            for (String record: records) {
+                bufferedWriter.write(record);
+            }
+            bufferedWriter.flush();
+            bufferedWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static double SMAPE(){
         return 0;
     }
