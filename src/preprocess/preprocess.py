@@ -29,7 +29,7 @@ class PreProcess:
             for _, column in enumerate(columns):
                 if column not in self.obs.columns:
                     continue  # go to next column
-                station_ts = self.obs.ix[selector, column]
+                station_ts = self.obs.loc[selector, column]
                 if station_ts.isnull().all():
                     continue  # no value to fill the missing ones!
                 self.obs.loc[selector, column] = util.fill(station_ts, inplace=True)

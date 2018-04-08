@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import pandas as pd
-import pandas.util.testing as pd_test
 import numpy.testing as np_test
 from src import reform
 
@@ -21,28 +20,3 @@ class UtilTest(unittest.TestCase):
         expected = {'x': np.array([[1, 2], [2, 3]]), 'y': np.array([[3], [4]])}
         np_test.assert_array_equal(x, expected['x'])
         np_test.assert_array_equal(y, expected['y'])
-
-    # test time sampling for different time modes
-    def test_sample_time(self):
-        # sample all hours
-        df = pd.DataFrame(data={
-            'time': ['2017-01-01 18:20:00', '2017-01-01 18:40:00', '2017-02-07 23:00:01'],
-            'value': [1, 2, 3]
-        })
-        sample = reform.sample_time(time_series=df, mode='h')
-        expected = pd.DataFrame(data={'time': ['2017-01-01 18:00:00', '2017-02-07 23:00:00'],
-                                      'value': [1.5, 3]})
-        pd_test.assert_frame_equal(sample, expected)
-        # sample a specific month = 2
-        df = pd.DataFrame(data={
-            'time': ['2016-02-01', '2017-01-01', '2017-02-07', '2017-02-07'],
-            'value': [2, 1, 2, 3]})
-        sample = reform.sample_time(time_series=df, mode='m', value=2)
-        expected = pd.DataFrame(data={'time': ['2016-02', '2017-02'], 'value': [2, 2.5]})
-        pd_test.assert_frame_equal(sample, expected)
-        # sample a specific day of week, 2017-01-01 is sunday (0)
-        df = pd.DataFrame(data={
-            'time': ['2017-01-01 12:00', '2017-01-01 14:00', '2017-01-06 10:00'], 'value': [1, 2, 3]})
-        sample = reform.sample_time(time_series=df, mode='dw', value=0)
-        expected = pd.DataFrame(data={'time': ['2017-00-0'], 'value': [1.5]})
-        pd_test.assert_frame_equal(sample, expected)

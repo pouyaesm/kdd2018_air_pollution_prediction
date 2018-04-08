@@ -18,7 +18,7 @@ class Time:
         Prepare time series data for learning
     """
     @staticmethod
-    def time(ts: pd.DataFrame, mode, value=None, time_key='time', agg_op=None):
+    def group(ts: pd.DataFrame, mode, value=None, time_key='time', agg_op=None):
         agg_op = {'value': 'mean'} if agg_op is None else agg_op
         sample = ts.copy()
         time = pd.to_datetime(ts[time_key])
