@@ -39,13 +39,6 @@ class UtilTest(unittest.TestCase):
         expected = pd.Series([1.0, 1.0, 2.0, 2.0, 3.0, 3.0], index=[10, 11, 12, 13, 14, 15])
         pd_test.assert_series_equal(series, expected)
 
-    def test_filter_by_time(self):
-        df = pd.DataFrame(data={'time': ['2019-01-01', '2020-01-01']})
-        df['time'] = pd.to_datetime(df['time'])
-        filtered = util.filter_by_time(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
-        expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
-        pd_test.assert_frame_equal(filtered, expected)
-
     # test SMAPE evaluation criterion
     def test_SMAPE_error(self):
         forecast = pd.Series([1, 2, 3, 4])

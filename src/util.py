@@ -1,6 +1,7 @@
 # general utilities used throughout the project
 import numpy as np
 import pandas as pd
+import const
 
 
 # convert time string to season
@@ -60,17 +61,6 @@ def fill(series: pd.Series, inplace=False):
     return filled
 
 
-def filter_by_time(df: pd.DataFrame, time_key
-                   , from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
-    filter_index = index_of_time(df, time_key, from_time, to_time)
-    return df.loc[filter_index, :].reset_index(drop=True)
-
-
-def index_of_time(df: pd.DataFrame, time_key
-                  , from_time='0000-00-00 00:00:00', to_time='9999-01-01 00:00:00'):
-    return (df[time_key] >= from_time) & (df[time_key] <= to_time)
-
-
 def SMAPE(forecast: pd.Series, actual: pd.Series):
     """
     SMAPE error for predicted array compared to array of real values
@@ -117,4 +107,4 @@ def write(df: pd.DataFrame, address):
     :return:
     """
     df.to_csv(address, sep=';', index=False, float_format='%.1f'
-              , date_format='%y-%m-%d %H', chunksize=400000)
+              , date_format=const.T_FORMAT, chunksize=400000)

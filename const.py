@@ -28,6 +28,7 @@ PREDICT = 'predict'
 LONG = 'longitude'
 LAT = 'latitude'
 S_TYPE = 'station_type'
+T_FORMAT = '%y-%m-%d %H'
 
 
 def func():
@@ -48,3 +49,4 @@ def func():
     global LD_STATIONS
     global LD_READ_LIVE
     global ID, TIME, PREDICT, LONG, LAT, S_TYPE
+    global T_FORMAT
