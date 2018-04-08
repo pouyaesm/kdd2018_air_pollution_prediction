@@ -21,6 +21,7 @@ def pretty(value, decimal):
     else:
         return ("%0." + str(decimal) + "f") % value
 
+
 def fill(series: pd.Series, inplace=False):
     """
         Replace NaN values with average of nearest non NaN neighbors
@@ -116,4 +117,4 @@ def write(df: pd.DataFrame, address):
     :return:
     """
     df.to_csv(address, sep=';', index=False, float_format='%.1f'
-              , date_format='%Y-%m-%d %H:%M:%S', chunksize=400000)
+              , date_format='%y-%m-%d %H', chunksize=400000)

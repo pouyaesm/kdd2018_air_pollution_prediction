@@ -15,6 +15,7 @@ BJ_READ_LIVE = 'BJ_READ_LIVE'
 
 LD_AQ = 'LD_AQ'
 LD_AQ_REST = 'LD_AQ_REST'
+LD_AQ_STATIONS = 'LD_AQ_STATIONS'
 LD_OBSERVED = 'LD_OBSERVED'
 LD_OBSERVED_MISS = 'LD_OBSERVED_MISS'
 LD_STATIONS = 'LD_STATIONS'
@@ -22,6 +23,10 @@ LD_READ_LIVE = 'LD_READ_LIVE'
 
 ID = 'station_id'
 TIME = 'utc_time'
+PREDICT = 'predict'
+LONG = 'longitude'
+LAT = 'latitude'
+S_TYPE = 'station_type'
 
 
 def func():
@@ -36,9 +41,9 @@ def func():
     global BJ_READ_LIVE
     global LD_AQ
     global LD_AQ_REST
+    global LD_AQ_STATIONS
     global LD_OBSERVED
     global LD_OBSERVED_MISS
     global LD_STATIONS
     global LD_READ_LIVE
-    global ID
-    global TIME
+    global ID, TIME, PREDICT, LONG, LAT, S_TYPE

@@ -29,6 +29,9 @@ class PreProcessLD(PreProcess):
         aq = pd.read_csv(self.config[const.LD_AQ], low_memory=False)
         aq_rest = pd.read_csv(self.config[const.LD_AQ_REST], low_memory=False)
 
+        # Read type and position of stations
+        aq_stations = pd.read_csv(self.config[const.LD_AQ_STATIONS], low_memory=False)
+
         # Remove the index column (first) of aq
         aq.drop(aq.columns[0], axis=1, inplace=True)
 
@@ -65,11 +68,21 @@ class PreProcessLD(PreProcess):
         # Re-arrange columns order for better readability
         aq = aq[[const.ID, const.TIME, 'PM2.5', 'PM10', 'NO2']]
 
+        # Build and clean station data
+        aq_stations.drop(columns=['api_data', 'historical_data', 'SiteName'], inplace=True)
+        aq_stations.rename(columns={'Unnamed: 0': const.ID, 'need_prediction': const.PREDICT
+            ,'Latitude': const.LAT, 'Longitude': const.LONG, 'SiteType': const.S_TYPE}, inplace=True)
+        aq_stations[const.S_TYPE] = aq_stations[const.S_TYPE].str.lower()\
+            .replace('urban background', 'urban')
+        # Stations that has type are air quality ones and need to be predicted
+        aq_stations[const.PREDICT] = (1 - aq_stations[const.PREDICT].isna()).astype(int)
+        self.stations = aq_stations
+
         # Sort data first based on station ids (alphabetically), then by time ascending
         self.obs = aq.sort_values([const.ID, const.TIME], ascending=True)
 
         # mark missing values
-        # self.missing = self.obs.isna().astype(int)
+        self.missing = self.obs.isna().astype(int)
 
         # set unique station ids temporary for filling iteration
         self.stations[const.ID] = self.obs[const.ID].unique()
@@ -83,8 +96,7 @@ class PreProcessLD(PreProcess):
         """
         # Write pre-processed data to csv file
         util.write(self.obs, self.config[const.LD_OBSERVED])
-        # util.write(self.missing, self.config[const.LD_OBSERVED_MISS])
-        # self.missing.to_csv(, sep=';', index=False)
+        util.write(self.missing, self.config[const.LD_OBSERVED_MISS])
         self.stations.to_csv(self.config[const.LD_STATIONS], sep=';', index=False)
         print('Data saved.')
 

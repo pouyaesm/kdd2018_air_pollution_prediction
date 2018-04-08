@@ -88,7 +88,11 @@ class PreProcessBJ(PreProcess):
             .agg({'longitude': 'first', 'latitude': 'first'})
         stations = stations.merge(aq_stations, how='outer', on=[const.ID], suffixes=['', '_aq'])
         stations = util.fillna(stations, target=['longitude', 'latitude'], source=['longitude_aq', 'latitude_aq'])
+        # Stations that has type are air quality ones and need to be predicted
+        stations[const.PREDICT] = (1 - stations[const.S_TYPE].isna()).astype(int)
+
         self.stations = util.drop_columns(stations, end_with='_aq')
+
         # Remove station position from time series
         self.obs.drop(['longitude', 'latitude'], axis=1)
 
