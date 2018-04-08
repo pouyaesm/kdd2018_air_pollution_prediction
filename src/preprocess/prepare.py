@@ -7,7 +7,8 @@ class Prepare:
 
     def __init__(self, config):
         self.config = config  # path of required files for preparing
-        self.ts = pd.DataFrame()  # time series data
+        self.ts = pd.DataFrame()  # time series data for learning
+        self.data = pd.DataFrame()  # cleaned data
         self.stations = pd.DataFrame()  # stations data
         self.missing = pd.DataFrame()  # index of missing values in the data
 
@@ -16,10 +17,14 @@ class Prepare:
             Load pre-processed data
         :return:
         """
-        self.ts = pd.read_csv(self.config[const.OBSERVED], delimiter=';', low_memory=False)
+        self.data = pd.read_csv(self.config[const.OBSERVED], delimiter=';', low_memory=False)
+        self.missing = pd.read_csv(self.config[const.OBSERVED], delimiter=';', low_memory=False)
         self.stations = pd.read_csv(self.config[const.STATIONS], delimiter=';', low_memory=False)
-        self.missing = self.ts.isna()
+
         return self
+
+    # def prepare(self):
+
 
     def save(self):
         """

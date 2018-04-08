@@ -1,6 +1,7 @@
 DEFAULT = 'DEFAULT'
 
 OBSERVED = 'OBSERVED'
+OBSERVED_MISSING = 'MISSING'
 STATIONS = 'STATIONS'
 
 BJ_AQ = 'BJ_AQ'
@@ -31,7 +32,7 @@ S_TYPE = 'station_type'
 
 def func():
     global DEFAULT
-    global OBSERVED
+    global OBSERVED, OBSERVED_MISSING
     global BJ_AQ
     global BJ_MEO
     global BJ_STATIONS
