@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+import numpy.testing as np_test
 import pandas.util.testing as pd_test
 from src.preprocess import times
 
@@ -18,6 +19,9 @@ class UtilTest(unittest.TestCase):
         # round to 12 hours
         rounded = times.round_hour(dt, 12)
         self.assertEqual('12:00:00', rounded.strftime('%H:%M:%S'))
+        # round to 24 hours
+        rounded = times.round_hour(dt, 24)
+        self.assertEqual('00:00:00', rounded.strftime('%H:%M:%S'))
 
     # test time sampling for different time modes
     @staticmethod
@@ -58,3 +62,13 @@ class UtilTest(unittest.TestCase):
         filtered = times.select(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
         expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
         pd_test.assert_frame_equal(filtered, expected)
+
+    @staticmethod
+    def test_group_behind():
+        yr = '2018-01-01 '
+        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        value = [2, 2, 3, 4]
+        # expected to group values into 9:00, 12:00 and 15:00 (3 steps of hour = 3)
+        # where 9:00 is expected to be the repetition of 12:00
+        grouped = times.group_behind(time, value, index=2, step=3, hours=3)
+        np_test.assert_array_equal(grouped, [2, 2, 2.5])

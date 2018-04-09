@@ -28,6 +28,21 @@ class UtilTest(unittest.TestCase):
         np_test.assert_array_equal(y, expected['y'])
 
     @staticmethod
+    def test_split():
+        values = [1, 2, 3, 4, 5]
+        yr = '2018-01-01 '
+        times = pd.to_datetime(
+            [yr + '12:00:00', yr + '13:00:00', yr + '14:00:00',
+             yr + '15:00:00', yr + '16:00:00'], utc=True).tolist()
+        t, x = reform.split(times, values, step=2, unit=2)
+        expected_x = [[1, 2], [3, 4]]
+        expected_t = pd.to_datetime(pd.Series(
+            [yr + '12:00:00', yr + '13:00:00']
+        ), utc=True).tolist()
+        np_test.assert_array_equal(expected_t, t)
+        np_test.assert_array_equal(expected_x, x)
+
+    @staticmethod
     def test_split_hours():
         """
             Test splitting a time series into hours
@@ -37,7 +52,7 @@ class UtilTest(unittest.TestCase):
         yr = '2018-01-01 '
         times = pd.to_datetime([yr + '12:00:00', yr + '13:00:00', yr + '14:00:00', yr + '15:00:00'],
                                utc=True).tolist()
-        t, x, y = reform.split_by_hours(times, values, hours_x=2, hours_y=2)
+        t, x, y = reform.split_dual(times, values, unit_x=2, unit_y=2)
         # day of week (1: monday), hour, value of two hours
         expected_x = [[1, 2], [2, 3]]
         expected_y = [[3, 4], [4, 5]]

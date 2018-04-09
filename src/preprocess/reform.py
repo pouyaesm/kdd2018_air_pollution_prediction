@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import const
 
-
 def group_by_station(ts: pd.DataFrame, stations: pd.DataFrame):
     """
         Group data series by station
@@ -37,27 +36,50 @@ def window_for_predict(values: pd.Series, x_size, y_size, step):
     return window_x, window_y
 
 
-def split_by_hours(time: list, value: list, hours_x, hours_y):
+def split_dual(time: pd.Series, value: pd.Series, unit_x: dict, unit_y: dict):
     """
-        Split data by hours into (time, input, output) tuples
-        Data is assumed to be sorted by time incrementally
-    :param time: series of datetime elements
-    :param value: series of values
-    :param miss: series of missing indicators (0 and 1)
-    :param hours_x: number of hours per x split
-    :param hours_y: number of hours per y split
+        Split data into (time, x, y) tuples
+        This function is able to construct x: (past 24h, past 7d), y: (next 24h)
+        for values: (hour, day), unit_x: (24, 7), unit_y: (24, 0)
+        Note: 'h' category must exist by default
+    :param time: time series of dictionaries
+    :param value: time series of values
+    :param unit_x: number of units per x split per category (h, 3h, 6h, 12h, d, w)
+    :param unit_y: number of units per y split per category (h, 3h, 6h, 12h, d, w)
     :return:
     """
-    split_count = len(value) - hours_x - hours_y + 1
-    x = list()  # values of first "hours"
-    y = list()  # values of next "hours"
+    x = dict()  # values of first "unit_x" per category
+    y = dict()  # values of next "unit_y" per category
+    avg = dict()  # running averages per category (e.g. average of 3 hours for 3h)
+    # number of hours determines the overall split count
+    split_count = len(value) - unit_x['h'] - unit_y['h'] + 1
     t = time[0:split_count]
     for i in range(0, split_count):
         # first "hours" values
-        x.append(value[i:i + hours_x])
+        x.append(value[i:i + unit_x])
         # next "hours" values as output
-        y.append(value[i + hours_x:i + hours_x + hours_y])
+        y.append(value[i + unit_x:i + unit_x + unit_y])
     return t, x, y
+
+
+def split(time: list, value: list, unit, step=1, offset=0):
+    """
+        Split data by unit into (time, value[0:unit]) tuples
+    :param time: series of datetime elements
+    :param value: series of values
+    :param unit: number of values extracted for each split
+    :param step: number of shift in units to extract the next split
+    :param offset: number of units skipped at the first of list
+    :return:
+    """
+    # effective length to utilize = K * step + unit - offset
+    length = len(value) - unit + offset  # when step = 1
+    split_count = length - length % step
+    x = list()
+    t = time[0:split_count]
+    for i in range(offset, split_count + offset):
+        x.append(value[i * step:i * step + unit])
+    return t, x
 
 
 def window(values: pd.Series, window_size, step):

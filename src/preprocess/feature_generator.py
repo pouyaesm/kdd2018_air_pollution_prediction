@@ -45,8 +45,8 @@ class FeatureGenerator:
             s_data = self.data[s_info[const.ID]]
             s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
             for pollutant in pollutants:
-                t, x, y = reform.split_by_hours(
-                    time=s_time, value=s_data[pollutant].tolist(), hours_x=self.hour_x, hours_y=self.hour_y)
+                t, x, y = reform.split_dual(
+                    time=s_time, value=s_data[pollutant].tolist(), unit_x=self.hour_x, unit_y=self.hour_y)
                 # dayofweek = [time.dayofweek +  for time in enumerate(t)]
                 loc = [[s_info[const.LONG], s_info[const.LAT]]] * len(t)  # location of station
                 feature_set = [[t]+loc+x+y for t, loc, x, y in zip(t, loc, x, y)]
