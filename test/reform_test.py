@@ -33,17 +33,20 @@ class UtilTest(unittest.TestCase):
             Test splitting a time series into hours
         :return:
         """
-        values = pd.Series([1, 2, 3, 4, 5])
-        y = '2018-01-01 '
-        times = pd.to_datetime(pd.Series(
-            [y + '12:00:00', y + '13:00:00', y + '14:00:00', y + '15:00:00']
-        ), utc=True)
-        split_x, split_y, time_x = reform.split_by_hours(times, values, hours_x=2, hours_y=2)
+        values = [1, 2, 3, 4, 5]
+        yr = '2018-01-01 '
+        times = pd.to_datetime([yr + '12:00:00', yr + '13:00:00', yr + '14:00:00', yr + '15:00:00'],
+                               utc=True).tolist()
+        t, x, y = reform.split_by_hours(times, values, hours_x=2, hours_y=2)
         # day of week (1: monday), hour, value of two hours
-        expected_split_x = np.array([[1, 12, 1, 2], [1, 13, 2, 3]])
-        expected_split_y = np.array([[3, 4], [4, 5]])
-        np_test.assert_array_equal(expected_split_x, split_x)
-        np_test.assert_array_equal(expected_split_y, split_y)
+        expected_x = [[1, 2], [2, 3]]
+        expected_y = [[3, 4], [4, 5]]
+        expected_t = pd.to_datetime(pd.Series(
+            [yr + '12:00:00', yr + '13:00:00']
+        ), utc=True).tolist()
+        np_test.assert_array_equal(expected_t, t)
+        np_test.assert_array_equal(expected_x, x)
+        np_test.assert_array_equal(expected_y, y)
 
     @staticmethod
     def test_group_by_station():

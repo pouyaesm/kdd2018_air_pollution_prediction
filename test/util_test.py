@@ -43,7 +43,14 @@ class UtilTest(unittest.TestCase):
     def test_SMAPE_error(self):
         forecast = pd.Series([1, 2, 3, 4])
         actual = pd.Series([0, 2, 3, 6])
-        # 100 / 4 * (1 / 0.5 + 2 / 5)
+        # 1 / 4 * (1 / 0.5 + 2 / 5)
         error = util.SMAPE(forecast, actual)
-        self.assertEqual(error, 60)
+        self.assertEqual(error, 0.6)
+
+    # test the relation between dataframe and numpy 2d structures (matrices)
+    def test_dataframe_numpy_convertion(self):
+        df = pd.DataFrame(data={'a': [1, 2], 'b': [3, 4]})
+        df_to_np = df.values.reshape(df.size)
+        array = np.array([[1, 3], [2, 4]]).reshape(df.size)
+        np_test.assert_array_equal(df_to_np, array)
 

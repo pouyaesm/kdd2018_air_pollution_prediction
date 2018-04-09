@@ -1,7 +1,6 @@
-import const
-import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+import pandas as pd
+from datetime import datetime
 
 
 def group(ts: pd.DataFrame, mode, value=None, time_key='time', agg_op=None):
@@ -56,5 +55,5 @@ def round_hour(time: datetime, hours):
 
 def select(df: pd.DataFrame, time_key,
            from_time='00-00-00 00', to_time='99-01-01 00'):
-    filter_index = (df[time_key] >= from_time) & (df[time_key] <= to_time)
+    filter_index = (df[time_key] >= from_time) & (df[time_key] < to_time)
     return df.loc[filter_index, :].reset_index(drop=True)

@@ -1,6 +1,6 @@
-import const
 import numpy as np
 import pandas as pd
+import const
 
 
 def group_by_station(ts: pd.DataFrame, stations: pd.DataFrame):
@@ -37,9 +37,9 @@ def window_for_predict(values: pd.Series, x_size, y_size, step):
     return window_x, window_y
 
 
-def split_by_hours(time: pd.Series, value: pd.Series, hours_x, hours_y):
+def split_by_hours(time: list, value: list, hours_x, hours_y):
     """
-        Split data by hours into (day of week, hour, input, output) tuples
+        Split data by hours into (time, input, output) tuples
         Data is assumed to be sorted by time incrementally
     :param time: series of datetime elements
     :param value: series of values
@@ -49,20 +49,15 @@ def split_by_hours(time: pd.Series, value: pd.Series, hours_x, hours_y):
     :return:
     """
     split_count = len(value) - hours_x - hours_y + 1
-    split_x = np.zeros(shape=(split_count, 2 + hours_x))  # day of week, hour, values per hour
-    split_y = np.zeros(shape=(split_count, hours_y))  # values of next "hours"
-    time_x = time[0:split_count] # time first hour in x
-    dayofweek = (time.dt.dayofweek + 1) % 7  # to have 0: sunday instead of 0: monday
-    hour = time.dt.hour
+    x = list()  # values of first "hours"
+    y = list()  # values of next "hours"
+    t = time[0:split_count]
     for i in range(0, split_count):
-        split_x[i, 0] = dayofweek.values[i]
-        split_x[i, 1] = hour.values[i]
         # first "hours" values
-        split_x[i, 2:] = value.values[i:i + hours_x]
+        x.append(value[i:i + hours_x])
         # next "hours" values as output
-        split_y[i, :] = value.values[i + hours_x:i + hours_x + hours_y]
-
-    return split_x, split_y, time_x
+        y.append(value[i + hours_x:i + hours_x + hours_y])
+    return t, x, y
 
 
 def window(values: pd.Series, window_size, step):

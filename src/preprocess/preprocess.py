@@ -34,6 +34,6 @@ class PreProcess:
                     continue  # no value to fill the missing ones!
                 self.obs.loc[selector, column] = util.fill(station_ts, inplace=True)
 
-        print('missing values filled in', time.time() - start_time, 'secs')
+        print('Missing values filled in', time.time() - start_time, 'secs')
 
         return self

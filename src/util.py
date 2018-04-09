@@ -72,7 +72,7 @@ def SMAPE(forecast: pd.Series, actual: pd.Series):
         raise ValueError("length forecast {%s} <> {%s} actual" % (forecast.size, actual.size))
     diff = np.abs(np.subtract(forecast, actual))
     avg = (np.abs(actual) + np.abs(forecast)) / 2
-    return (100 / forecast.size) * np.sum(diff / avg)
+    return (1 / forecast.size) * np.sum(diff / avg)
 
 
 def drop_columns(df: pd.DataFrame, end_with):
@@ -108,3 +108,5 @@ def write(df: pd.DataFrame, address):
     """
     df.to_csv(address, sep=';', index=False, float_format='%.1f'
               , date_format=const.T_FORMAT, chunksize=400000)
+
+
