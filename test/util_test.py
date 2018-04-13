@@ -54,3 +54,8 @@ class UtilTest(unittest.TestCase):
         array = np.array([[1, 3], [2, 4]]).reshape(df.size)
         np_test.assert_array_equal(df_to_np, array)
 
+    @staticmethod
+    def test_shift():
+        values = [1, 2, 3]
+        util.shift(values)
+        np_test.assert_array_equal(x=[2, 3, 1], y=values)

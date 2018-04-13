@@ -110,3 +110,6 @@ def write(df: pd.DataFrame, address):
               , date_format=const.T_FORMAT, chunksize=400000)
 
 
+def shift(l: list):
+    l.append(l.pop(0))
+

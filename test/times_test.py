@@ -78,11 +78,20 @@ class UtilTest(unittest.TestCase):
         np_test.assert_array_equal(grouped_back, [3.5, 3.5, 3.5])
 
     @staticmethod
-    def test_group_at():
-        # test grouping values backward or forward from a given value and given hours unit
+    def test_running_average():
+        # test averaging values backward or forward from a given value and given hours unit
         yr = '2018-01-01 '
         time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
-        value = [2, 2, 3, 4]
-        # expected to group values into 12:00 and 15:00 (3 steps of hour = 3)
-        grouped_forward = times.group_at(time, value, hours=3)
-        np_test.assert_array_equal(x=[2, 2, 2.5, 3], y=grouped_forward)
+        value = [2, 3, 4, 5]
+        # expected to forward-average values into 12:00 and 15:00 (unit: 3 hours)
+        averaged = times.running_average(time, value, hours=3)
+        np_test.assert_array_equal(x=[2, 3, 3.5, 4], y=averaged)
+
+    @staticmethod
+    def test_split_at():
+        yr = '2018-01-01 '
+        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        split = times.split(time=time, value=[2, 3, 4, 5], hours=3, step=2)
+
+        expected = [[2, 2], [2, 3], [2, 3.5], [2, 4]]
+        np_test.assert_array_equal(x=expected, y=split)
