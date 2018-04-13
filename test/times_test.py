@@ -64,11 +64,28 @@ class UtilTest(unittest.TestCase):
         pd_test.assert_frame_equal(filtered, expected)
 
     @staticmethod
-    def test_group_behind():
+    def test_group_from():
+        # test grouping values backward or forward from a given value and given hours unit
         yr = '2018-01-01 '
         time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
         value = [2, 2, 3, 4]
         # expected to group values into 9:00, 12:00 and 15:00 (3 steps of hour = 3)
         # where 9:00 is expected to be the repetition of 12:00
-        grouped = times.group_behind(time, value, index=2, step=3, hours=3)
-        np_test.assert_array_equal(grouped, [2, 2, 2.5])
+        grouped_back = times.group_from(time, value, index=2, step=-3, hours=3)
+        np_test.assert_array_equal(grouped_back, [2, 2, 2.5])
+        # expected to group forward into 150:00
+        grouped_back = times.group_from(time, value, index=2, step=3, hours=3)
+        np_test.assert_array_equal(grouped_back, [3.5, 3.5, 3.5])
+
+    @staticmethod
+    def test_group_at():
+        # test grouping values backward or forward from a given value and given hours unit
+        yr = '2018-01-01 '
+        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        value = [2, 2, 3, 4]
+        # expected to group values backward into 9:00, 12:00 and 15:00 (3 steps of hour = 3)
+        grouped_back = times.group_at(time, value, step=-3, hours=3)
+        np_test.assert_array_equal(grouped_back, [2, 2, 2.5])
+        # expected to group forward
+        grouped_back = times.group_at(time, value, step=3, hours=3)
+        np_test.assert_array_equal(grouped_back, [3.5, 3.5, 3.5])

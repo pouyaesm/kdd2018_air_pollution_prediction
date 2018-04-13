@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from math import ceil
 import const
 
 def group_by_station(ts: pd.DataFrame, stations: pd.DataFrame):
@@ -36,7 +37,7 @@ def window_for_predict(values: pd.Series, x_size, y_size, step):
     return window_x, window_y
 
 
-def split_dual(time: pd.Series, value: pd.Series, unit_x: dict, unit_y: dict):
+def split_dual(time: pd.Series, value: pd.Series, unit_x: int, unit_y: int):
     """
         Split data into (time, x, y) tuples
         This function is able to construct x: (past 24h, past 7d), y: (next 24h)
@@ -44,23 +45,51 @@ def split_dual(time: pd.Series, value: pd.Series, unit_x: dict, unit_y: dict):
         Note: 'h' category must exist by default
     :param time: time series of dictionaries
     :param value: time series of values
-    :param unit_x: number of units per x split per category (h, 3h, 6h, 12h, d, w)
-    :param unit_y: number of units per y split per category (h, 3h, 6h, 12h, d, w)
+    :param unit_x: number of units per x split
+    :param unit_y: number of units per y split
     :return:
     """
-    x = dict()  # values of first "unit_x" per category
-    y = dict()  # values of next "unit_y" per category
-    avg = dict()  # running averages per category (e.g. average of 3 hours for 3h)
+    x = list()  # values of first "unit_x"
+    y = list()  # values of next "unit_y"
     # number of hours determines the overall split count
-    split_count = len(value) - unit_x['h'] - unit_y['h'] + 1
+    split_count = len(value) - unit_x - unit_y + 1
     t = time[0:split_count]
     for i in range(0, split_count):
+        split_at = i + unit_x
         # first "hours" values
-        x.append(value[i:i + unit_x])
+        x.append(value[i:split_at])
         # next "hours" values as output
-        y.append(value[i + unit_x:i + unit_x + unit_y])
+        y.append(value[split_at:split_at + unit_y])
     return t, x, y
 
+
+# def split_complex(time: list, value: list, offset: int, unit_x: dict, unit_y: dict):
+#     """
+#         Split data into (time, x, y) tuples
+#         This function is able to construct
+#             x: (past 24h, past 7d), y: (next 24h)
+#             given values: (hour, day), unit_x: (24, 7), unit_y: (24, 0)
+#         Note: 'h' category must exist by default
+#     :param time: time series of dictionaries
+#     :param value: time series of values
+#     :param offset: number of hours skipped from the beginning of time series
+#     :param unit_x: number of units per x split per category (h, 3h, 6h, 12h, d, w)
+#     :param unit_y: number of units per y split per category (h, 3h, 6h, 12h, d, w)
+#     :return:
+#     """
+#     x = dict()  # values of first "unit_x" per category
+#     y = dict()  # values of next "unit_y" per category
+#     avg = dict()  # running averages per category (e.g. average of 3 hours for 3h)
+#     # number of hours determines the overall split count
+#     split_count = len(value) - offset + 1
+#     t = time[0:split_count]
+#     for i in range(0, split_count):
+#         split_at = i + unit_x['h']
+#         # first "hours" values
+#         x.append(value[i:split_at])
+#         # next "hours" values as output
+#         y.append(value[split_at:split_at + unit_y['h']])
+#     return t, x, y
 
 def split(time: list, value: list, unit, step=1, offset=0):
     """
@@ -101,3 +130,27 @@ def window(values: pd.Series, window_size, step):
     strides = (step * trimmed.strides[-1],) + (trimmed.strides[-1],)
     windowed = np.lib.stride_tricks.as_strided(trimmed, shape=shape, strides=strides)
     return windowed
+
+
+def average(value: list, step: int):
+    """
+        Put average of step values at each index, by averaging values behind
+        or ahead of that index depending on 'step' sign
+    :param value:  time series of values to be grouped
+    :param step: number of steps to aggregate (positive, forward, negative backward)
+    :return:
+    """
+    iteration = range(0, len(value)) if np.sign(step) > 0 else reversed(range(0, len(value)))
+    step = abs(step)
+    size = int(ceil(len(value) / (step + 1)))
+    avg = [0] * len(value)  # average of values at index i corresponding to left or right neighbors of i
+    aggregate = [0] * size  # sum of values for a time group
+    count = [0] * size  # number of values for a time group
+
+    for i in iteration:
+        round_i = i // (step + 1)
+        aggregate[round_i] = aggregate[round_i] + value[i]
+        count[round_i] = count[round_i] + 1
+        avg[i] = aggregate[round_i] / count[round_i]
+
+    return avg

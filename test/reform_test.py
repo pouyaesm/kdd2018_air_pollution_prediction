@@ -74,3 +74,13 @@ class UtilTest(unittest.TestCase):
         }
         pd_test.assert_frame_equal(expected[1], grouped[1])
         pd_test.assert_frame_equal(expected[3], grouped[3])
+
+    @staticmethod
+    def test_form():
+        value = [1, 2, 3, 4, 5]
+        # expected to average from start to end
+        average_forward = reform.average(value, 1)
+        np_test.assert_array_equal(x=[1, 1.5, 3, 3.5, 5], y=average_forward)
+        # expected to average from end to start
+        average_backward = reform.average(value, -1)
+        np_test.assert_array_equal(x=[1.5, 2, 3.5, 4, 5], y=average_backward)

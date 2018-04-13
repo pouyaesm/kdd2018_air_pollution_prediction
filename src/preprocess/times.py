@@ -49,44 +49,76 @@ def group(ts: pd.DataFrame, mode, value=None, time_key='time', agg_op=None):
     return sample
 
 
-def group_behind(time: list, value: list, index, step, hours):
+def group_from(time: list, value: list, index, step, hours):
     """
         Group values according to unit, that are mostly hours * step behind the time(index)
     :param time: time series of data-time objects
     :param value:   time series of values to be grouped
-    :param index:
-    :param step:
+    :param index: index of origin value to start the grouping (backward or forward)
+    :param step: negative index for backward, positive for forward
     :param hours: number of hours as a unit to group
     :return:
     """
     aggregate = dict()  # sum of values for a time group
     count = dict()  # number of values for a time group
+    direction = np.sign(step)  # positive is forward
+    max_index = len(time) - 1  # max allowed index
     cur_t = time[index]
-    min_t = cur_t - timedelta(hours=step * hours)
-    while cur_t >= min_t:
+    round_t = None
+    limit_t = cur_t + direction * timedelta(hours=abs(step) * hours)
+    while (direction > 0 and cur_t <= limit_t) or (direction < 0 and cur_t >= limit_t):
         # t: rounded time to aggregate values using a dictionary
-        t = round_hour(cur_t, hours)
-        aggregate[t] = aggregate[t] + value[index] if t in aggregate else value[index]
-        count[t] = count[t] + 1 if t in count else 1
-        if index == 0:
+        round_t = round_hour(cur_t, hours)
+        aggregate[round_t] = aggregate[round_t] + value[index] \
+            if round_t in aggregate else value[index]
+        count[round_t] = count[round_t] + 1 if round_t in count else 1
+        if index == 0 or index == max_index:
             break
-        index = index - 1
+        index = index + direction
         cur_t = time[index]
 
-    remained_steps = step - len(aggregate)
-    # remained_steps > 0 when index hits 0 before "step" entries are filled
+    # remained_steps > 0 when index hits array boundary before "step" entries are filled
+    remained_steps = abs(step) - len(aggregate)
     if remained_steps > 0:
-        last_t = cur_t
         for i in range(0, remained_steps):
-            cur_t -= timedelta(hours=hours)
+            cur_t = cur_t + direction * timedelta(hours=hours)
             t = round_hour(cur_t, hours)
-            aggregate[t] = aggregate[last_t]
-            count[t] = 1
+            aggregate[t] = aggregate[round_t]
+            count[t] = count[round_t]
 
     for t, v in iter(aggregate.items()):
         aggregate[t] /= count[t]
 
     return [value for (key, value) in sorted(aggregate.items())]
+
+
+def group_at(time: list, value: list, hours: int, direction: bool):
+    """
+        Put average values at each index, by aggregating values step * hours behind
+        or ahead of that index depending of 'step' sign
+    :param time: time series of data-time objects
+    :param value:  time series of values to be grouped
+    :param hours: number of hours as a unit to group
+    :param direction: positive for forward, negative for backward aggregation
+    :return:
+    """
+    size = len(time)
+    if size != len(value):  # each value must have a corresponding time
+        return -1
+
+    aggregate = dict()  # sum of values for a time group
+    average = list()  # average of values at index i corresponding to left or right neighbors of i
+    count = dict()  # number of values for a time group
+    iteration = range(0, size) if direction else reversed(range(0, size))
+
+    for index in iteration:
+        round_t = round_hour(time[index], hours)  # round time to 'hours' unit
+        aggregate[round_t] = aggregate[round_t] + value[index] \
+            if round_t in aggregate else value[index]
+        count[round_t] = count[round_t] + 1 if round_t in count else 1
+        average[index] = aggregate[round_t] / count[round_t]
+
+    return average
 
 
 def round_hour(time: datetime, hours):
