@@ -92,26 +92,24 @@ def group_from(time: list, value: list, index, step, hours):
     return [value for (key, value) in sorted(aggregate.items())]
 
 
-def group_at(time: list, value: list, hours: int, direction: bool):
+def group_at(time: list, value: list, hours: int):
     """
         Put average values at each index, by aggregating values step * hours behind
-        or ahead of that index depending of 'step' sign
+        of that index
     :param time: time series of data-time objects
     :param value:  time series of values to be grouped
     :param hours: number of hours as a unit to group
-    :param direction: positive for forward, negative for backward aggregation
     :return:
     """
     size = len(time)
     if size != len(value):  # each value must have a corresponding time
         return -1
 
+    average = [0] * size  # average of values at index i corresponding to neighbors behind i
     aggregate = dict()  # sum of values for a time group
-    average = list()  # average of values at index i corresponding to left or right neighbors of i
     count = dict()  # number of values for a time group
-    iteration = range(0, size) if direction else reversed(range(0, size))
 
-    for index in iteration:
+    for index in range(0, size):
         round_t = round_hour(time[index], hours)  # round time to 'hours' unit
         aggregate[round_t] = aggregate[round_t] + value[index] \
             if round_t in aggregate else value[index]

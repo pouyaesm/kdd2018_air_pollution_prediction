@@ -83,9 +83,6 @@ class UtilTest(unittest.TestCase):
         yr = '2018-01-01 '
         time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
         value = [2, 2, 3, 4]
-        # expected to group values backward into 9:00, 12:00 and 15:00 (3 steps of hour = 3)
-        grouped_back = times.group_at(time, value, step=-3, hours=3)
-        np_test.assert_array_equal(grouped_back, [2, 2, 2.5])
-        # expected to group forward
-        grouped_back = times.group_at(time, value, step=3, hours=3)
-        np_test.assert_array_equal(grouped_back, [3.5, 3.5, 3.5])
+        # expected to group values into 12:00 and 15:00 (3 steps of hour = 3)
+        grouped_forward = times.group_at(time, value, hours=3)
+        np_test.assert_array_equal(x=[2, 2, 2.5, 3], y=grouped_forward)
