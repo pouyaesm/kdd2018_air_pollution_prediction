@@ -91,23 +91,23 @@ def split_dual(time: pd.Series, value: pd.Series, unit_x: int, unit_y: int):
 #         y.append(value[split_at:split_at + unit_y['h']])
 #     return t, x, y
 
-def split(time: list, value: list, unit, step=1, offset=0):
+def split(time: list, value: list, step, shift=1, skip=0):
     """
         Split data by unit into (time, value[0:unit]) tuples
     :param time: series of datetime elements
     :param value: series of values
-    :param unit: number of values extracted for each split
-    :param step: number of shift in units to extract the next split
-    :param offset: number of units skipped at the first of list
+    :param step: number of values extracted for each split
+    :param shift: number of shift in units to extract the next split
+    :param skip: number of units skipped at the first of list
     :return:
     """
-    # effective length to utilize = K * step + unit - offset
-    length = len(value) - unit + offset  # when step = 1
-    split_count = length - length % step
+    # effective length to utilize = K * step + unit + offset
+    length = len(value) - step - skip  # when step = 1
+    split_count = length - length % shift
     x = list()
-    t = time[0:split_count]
-    for i in range(offset, split_count + offset):
-        x.append(value[i * step:i * step + unit])
+    t = time[skip:split_count + skip]
+    for i in range(0, split_count):
+        x.append(value[i * shift + skip:i * shift + skip + step])
     return t, x
 
 

@@ -34,10 +34,10 @@ class UtilTest(unittest.TestCase):
         times = pd.to_datetime(
             [yr + '12:00:00', yr + '13:00:00', yr + '14:00:00',
              yr + '15:00:00', yr + '16:00:00'], utc=True).tolist()
-        t, x = reform.split(times, values, step=2, unit=2)
-        expected_x = [[1, 2], [3, 4]]
+        t, x = reform.split(times, values, shift=2, step=2, skip=1)
+        expected_x = [[2, 3], [4, 5]]
         expected_t = pd.to_datetime(pd.Series(
-            [yr + '12:00:00', yr + '13:00:00']
+            [yr + '13:00:00', yr + '14:00:00']
         ), utc=True).tolist()
         np_test.assert_array_equal(expected_t, t)
         np_test.assert_array_equal(expected_x, x)

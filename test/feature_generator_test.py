@@ -6,7 +6,7 @@ import numpy.testing as np_test
 import pandas.util.testing as pd_test
 import pandas.util.testing as pd_test
 from src.preprocess import reform
-from src.preprocess.feature_generator import FeatureGenerator
+from src.preprocess.feature_generator_bj import FeatureGenerator
 
 
 class FeatureGeneratorTest(unittest.TestCase):

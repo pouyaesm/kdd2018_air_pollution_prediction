@@ -21,26 +21,51 @@ def replace_time(data: pd.DataFrame):
     data.drop(columns=[const.TIME], inplace=True)
 
 
+def drop_time_location(data: pd.DataFrame):
+    """
+    :param data:
+    :return:
+    """
+    data.drop(columns=[const.LONG], inplace=True)
+    data.drop(columns=[const.LAT], inplace=True)
+    data.drop(columns=[const.TIME], inplace=True)
+
+
 # access default configurations
 config = settings.config[const.DEFAULT]
 
 # load data
-stations = pd.read_csv(config[const.BJ_STATIONS], sep=";", low_memory=False)
-ts = pd.read_csv(config[const.BJ_FEATURES], sep=";", low_memory=False)
+# stations = pd.read_csv(config[const.BJ_STATIONS], sep=";", low_memory=False)
+# ts = pd.read_csv(config[const.BJ_PM25_FEATURES], sep=";", low_memory=False)
+# loss = 'mean_absolute_percentage_error'
+stations = pd.read_csv(config[const.LD_STATIONS], sep=";", low_memory=False)
+ts = pd.read_csv(config[const.LD_PM10_FEATURES], sep=";", low_memory=False)
+loss = 'mean_absolute_error'
 
-train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-11-31 23')
-valid = times.select(df=ts, time_key=const.TIME, from_time='17-11-31 00', to_time='17-12-31 23')
-test = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 00', to_time='18-01-31 23')
+# train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-11-31 23')
+# valid = times.select(df=ts, time_key=const.TIME, from_time='17-11-31 00', to_time='17-12-31 23')
+# test = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 00', to_time='18-01-31 23')
 
+train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-12-31 23')
+valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
+test = times.select(df=ts, time_key=const.TIME, from_time='18-01-01 00', to_time='18-01-31 23')
+
+# drop_time_location(train)
+# drop_time_location(valid)
+# drop_time_location(test)
 replace_time(train)
 replace_time(valid)
 replace_time(test)
 
-pollutants = ['PM2.5']  # ['PM2.5', 'PM10', 'O3']
+# pollutants = ['PM10']  # ['PM2.5', 'PM10', 'O3']
 columns = ['forecast', 'actual', 'station', 'pollutant']
 predictions = pd.DataFrame(data={}, columns=columns)
-x = range(0, 52)
-y = range(52, 99)
+# bj_features = 2 + 2 + 28 * 3 + 48
+# x = range(0, bj_features)
+# y = range(bj_features, train.columns.size)
+ld_features = 2 + 2 + 28 + 48
+x = range(0, ld_features)
+y = range(ld_features, train.columns.size)
 x_train = train.iloc[:, x]
 y_train = train.iloc[:, y]
 x_valid = valid.iloc[:, x]

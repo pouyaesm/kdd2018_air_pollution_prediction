@@ -120,13 +120,14 @@ def running_average(time: list, value: list, hours: int):
     return run_average
 
 
-def split(time: list, value: list, hours, step):
+def split(time: list, value: list, hours, step, skip=0):
     """
         Split and group 'step' number of averaged values 'hours' apart
     :param time: time per value (hour apart)
     :param value: assumed to have value[step * t - 1] = average[value[step * (t - 1):step * t]
-    :param hours: each step is considered hours apart
+    :param hours: group times into 'hours' hours
     :param step: number of group times set for each index
+    :param skip: ignore offset number of first values
     :return:
     """
     splits = list()  # step group times per index
@@ -135,19 +136,30 @@ def split(time: list, value: list, hours, step):
         return -1
     # Calculate running average of values
     # that resets by entering new time groups of duration 'hours'
-    run_average = running_average(time, value, hours)
+    run_average = running_average(time=time, value=value, hours=hours)
     # array of last 'step' averages to be set for on-going
-    split_values = [run_average[0]] * step
+    cur_step = 0
+    step_values = [0] * step
     t_group_pre = round_hour(time[0], hours)  # first time group to begin
     for index, value in enumerate(run_average):
         t_group = round_hour(time[index], hours)
         if t_group != t_group_pre:  # entering new time group
-            util.shift(split_values)  # shift array toward 0
             t_group_pre = t_group
-        # Set running average of current time group
-        split_values[step - 1] = value
+            if cur_step < step - 1:
+                cur_step = min(cur_step + 1, step - 1)
+            else:
+                util.shift(step_values)  # shift array toward 0
+
+        # Set running average of current time group on ward
+        if cur_step < step - 1:
+            step_values[cur_step:] = [value] * (step - cur_step)
+        else:
+            step_values[cur_step] = value
+
+        if index < skip:
+            continue  # skip including first 'offset' indices
         # Set 'step' count averaged values for current index
-        splits.append(split_values.copy())
+        splits.append(step_values.copy())
     return splits
 
 

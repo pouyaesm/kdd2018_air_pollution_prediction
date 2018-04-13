@@ -88,10 +88,17 @@ class UtilTest(unittest.TestCase):
         np_test.assert_array_equal(x=[2, 3, 3.5, 4], y=averaged)
 
     @staticmethod
-    def test_split_at():
+    def test_split():
         yr = '2018-01-01 '
-        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
-        split = times.split(time=time, value=[2, 3, 4, 5], hours=3, step=2)
+        time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        value = [2, 3, 4, 5, 6]
+        split = times.split(time=time, value=value, hours=3, step=3, skip=2)
+        # time groups: 12:00 and 15:00
+        # first two [2, 2, 2] and [2.5, 2.5, 2.5] split skipped
+        expected = [[2.5, 4, 4], [2.5, 4.5, 4.5], [2.5, 5, 5]]
+        np_test.assert_array_equal(x=expected, y=split)
 
-        expected = [[2, 2], [2, 3], [2, 3.5], [2, 4]]
+        # first two [2, 2, 2] and [2, 2, 3] split skipped
+        split = times.split(time=time, value=value, hours=1, step=3, skip=2)
+        expected = [[2, 3, 4], [3, 4, 5], [4, 5, 6]]
         np_test.assert_array_equal(x=expected, y=split)
