@@ -1,6 +1,7 @@
 import const
 from src import util
 import pandas as pd
+import numpy as np
 import time
 
 
@@ -45,27 +46,3 @@ class PreProcess:
 
         return self
 
-    def process_grid(self):
-        """
-            Load and PreProcess the grid data
-        :return:
-        """
-        if len(self.obs.index) == 0 or len(self.stations.index) == 0:
-            raise ValueError("Observed data must be prepared first")
-        # # Read observed data and stations
-        # obs = pd.read_csv(self.config[const.OBSERVED], sep=';', low_memory=False)
-        # stations = pd.read_csv(self.config[const.STATIONS], sep=';')
-        # Read grid data by chunk to avoid low memory exception
-        tp = pd.read_csv(self.config[const.GRID_DATA], low_memory=False, iterator=True, chunksize=400000)
-        # grid_ts = pd.concat(tp, ignore_index=True)
-        grid_ts = tp.read(nrows=10000)  # for fast tests
-        grid_ts.rename(columns={'stationName': const.ID, 'wind_speed/kph': const.WSPD}, inplace=True)
-        # Append grid live loaded offline
-        grid_live = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
-        grid_ts = grid_ts.append(grid_live, ignore_index=True, verify_integrity=True)
-        grids = grid_ts.groupby('station_id', as_index=False) \
-            .agg({const.LONG: 'first', const.LAT: 'first'})
-        for station_info in self.stations.itertuples():
-            longitude = station_info.longitude
-            latitude = station_info.latitude
-        return self

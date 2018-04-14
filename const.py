@@ -53,6 +53,7 @@ GRID_URL = 'grid_url'
 GRID_LIVE = 'grid_live'
 
 ID = 'station_id'
+GID = 'grid_id'
 TIME = 'utc_time'
 PREDICT = 'predict'
 LONG = 'longitude'
@@ -79,7 +80,7 @@ def func():
     global LD_OBSERVED_MISS
     global LD_STATIONS
     global LD_READ_LIVE
-    global ID, TIME, PREDICT, LONG, LAT, TEMP, WSPD, S_TYPE
+    global ID, GID, TIME, PREDICT, LONG, LAT, TEMP, WSPD, S_TYPE
     global T_FORMAT
     global FEATURES, BJ_PM25_, BJ_PM10_, BJ_O3_
     global LD_FEATURES, LD_PM25_, LD_PM10_
