@@ -1,20 +1,20 @@
-import const, settings
+import const
+import settings
 from src.preprocess import reform, times
 from src import util
 import time
 import pandas as pd
-import numpy as np
 
 
 class FeatureGenerator:
 
-    def __init__(self, config, hour_x, hour_y):
+    def __init__(self, cfg, hour_x, hour_y):
         """
-        :param config:
+        :param cfg:
         :param hour_x: number of hour values of x (input) per sample
         :param hour_y: number of hour values of y (output) per sample
         """
-        self.config = config
+        self.config = cfg
         self.data = pd.DataFrame()  # time series data per station
         self.stations = pd.DataFrame  # stations of time series
         self.features = pd.DataFrame()  # extracted features
