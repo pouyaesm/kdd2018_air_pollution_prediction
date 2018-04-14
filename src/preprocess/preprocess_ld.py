@@ -15,7 +15,7 @@ class PreProcessLD(PreProcess):
             Load live observed data from KDD APIs
         :return:
         """
-        aq_url = "https://biendata.com/competition/airquality/ld/2018-03-01-0/2018-06-01-0/2k0d1d8"
+        aq_url = "https://biendata.com/competition/airquality/ld/2018-02-01-0/2018-06-01-0/2k0d1d8"
         aq_live = pd.read_csv(io.StringIO(requests.get(aq_url).content.decode('utf-8')))
         print('Live aQ has been read, count:', len(aq_live))
         return aq_live
@@ -106,7 +106,6 @@ if __name__ == "__main__":
     pre_process.process()
     # pre_process.fill()
     print('No. observed rows:', len(pre_process.obs))
-    # print('No. stations:', len(pre_process.stations),
-    #       ', only weather:', pre_process.stations['station_type'].count())
+    print('No. stations:', len(pre_process.stations))
     pre_process.save()
     print("Done!")

@@ -11,6 +11,7 @@ from src.preprocess.preprocess import PreProcess
 class PreProcessBJ(PreProcess):
 
     def __init__(self, config):
+        super().__init__(config)
         self.config = config  # location of input/output files
         self.obs = pd.DataFrame()  # merged observed air quality and meteorology data per station
         self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
@@ -22,8 +23,8 @@ class PreProcessBJ(PreProcess):
             Load live observed data from KDD APIs
         :return:
         """
-        aq_url = "https://biendata.com/competition/airquality/bj/2018-03-01-0/2018-06-01-0/2k0d1d8"
-        meo_url = "https://biendata.com/competition/meteorology/bj/2018-03-01-0/2018-06-01-0/2k0d1d8"
+        aq_url = "https://biendata.com/competition/airquality/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
+        meo_url = "https://biendata.com/competition/meteorology/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
         aq_live = pd.read_csv(io.StringIO(requests.get(aq_url).content.decode('utf-8')))
         print('Live aQ has been read, count:', len(aq_live))
         meo_live = pd.read_csv(io.StringIO(requests.get(meo_url).content.decode('utf-8')))
