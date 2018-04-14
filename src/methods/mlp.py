@@ -3,86 +3,108 @@
 """
 import numpy as np
 import pandas as pd
-import const, settings
+import const
+import settings
+import tensorflow as tf
 from src import util
 from src.preprocess import times
 from src.methods.neural_net import NeuralNet
+from keras.models import Sequential
 
 
-def replace_time(data: pd.DataFrame):
-    """
-        Replace the complete datetime with its (day of week, hour)
-    :param data:
-    :return:
-    """
-    date = pd.to_datetime(data[const.TIME], format=const.T_FORMAT, utc=True)
-    data.insert(loc=0, column='hour', value=date.dt.hour)
-    data.insert(loc=0, column='dayofweek', value=(date.dt.dayofweek + 1) % 7)  # 0: monday -> 0: sunday
-    data.drop(columns=[const.TIME], inplace=True)
+class MLP:
+
+    def __init__(self, cfg):
+        self.config = cfg
+        self.model = Sequential()
+
+    @staticmethod
+    def replace_time(data: pd.DataFrame):
+        """
+            Replace the complete datetime with its (day of week, hour)
+        :param data:
+        :return:
+        """
+        date = pd.to_datetime(data[const.TIME], format=const.T_FORMAT, utc=True)
+        data.insert(loc=0, column='hour', value=date.dt.hour)
+        data.insert(loc=0, column='dayofweek', value=(date.dt.dayofweek + 1) % 7)  # 0: monday -> 0: sunday
+        data.drop(columns=[const.TIME], inplace=True)
+
+    @staticmethod
+    def drop_time_location(data: pd.DataFrame):
+        """
+        :param data:
+        :return:
+        """
+        data.drop(columns=[const.LONG], inplace=True)
+        data.drop(columns=[const.LAT], inplace=True)
+        data.drop(columns=[const.TIME], inplace=True)
+
+    def build(self):
+        # load data
+        # stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
+        ts = pd.read_csv(self.config[const.FEATURES], sep=";", low_memory=False)
+
+        # train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-11-31 23')
+        # valid = times.select(df=ts, time_key=const.TIME, from_time='17-11-31 00', to_time='17-12-31 23')
+        # test = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 00', to_time='18-01-31 23')
+
+        train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-12-31 23')
+        valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
+        test = times.select(df=ts, time_key=const.TIME, from_time='18-01-01 00', to_time='18-01-31 23')
+
+        MLP.replace_time(train)
+        MLP.replace_time(valid)
+        MLP.replace_time(test)
+
+        # pollutants = ['PM10']  # ['PM2.5', 'PM10', 'O3']
+        # columns = ['forecast', 'actual', 'station', 'pollutant']
+        # predictions = pd.DataFrame(data={}, columns=columns)
+        feature_count = train.columns.size - 48
+        x = range(0, feature_count)
+        y = range(feature_count, feature_count + 48)
+        x_train = train.iloc[:, x]
+        y_train = train.iloc[:, y]
+        x_valid = valid.iloc[:, x]
+        y_valid = valid.iloc[:, y]
+        x_test = test.iloc[:, x]
+        y_test = test.iloc[:, y]
+
+        self.model = NeuralNet.mlp(x_train=x_train, y_train=y_train,
+                                   x_valid=x_valid, y_valid=y_valid,
+                                   loss=self.config[const.LOSS_FUNCTION])
+
+        y_predict = self.predict(x_test)
+        print('SMAPE:', MLP.evaluate(actual=y_test, forecast=y_predict))
+
+        return self
+
+    def predict(self, x):
+        return self.model.predict(x)
+
+    @staticmethod
+    def evaluate(actual, forecast):
+        actual_array = actual.values.reshape(actual.size)
+        forecast_array = np.array(forecast).reshape(forecast.size)
+        return util.SMAPE(forecast=forecast_array, actual=actual_array)
+
+    def load(self):
+        self.model = tf.keras.models.load_model(filepath=self.config[const.MODEL])
+        return self
+
+    def save(self):
+        self.model.save(filepath=self.config[const.MODEL])
+        return self
 
 
-def drop_time_location(data: pd.DataFrame):
-    """
-    :param data:
-    :return:
-    """
-    data.drop(columns=[const.LONG], inplace=True)
-    data.drop(columns=[const.LAT], inplace=True)
-    data.drop(columns=[const.TIME], inplace=True)
-
-
-# access default configurations
-config = settings.config[const.DEFAULT]
-
-# load data
-# stations = pd.read_csv(config[const.BJ_STATIONS], sep=";", low_memory=False)
-# ts = pd.read_csv(config[const.BJ_PM25_FEATURES], sep=";", low_memory=False)
-# loss = 'mean_absolute_percentage_error'
-stations = pd.read_csv(config[const.LD_STATIONS], sep=";", low_memory=False)
-ts = pd.read_csv(config[const.LD_PM10_FEATURES], sep=";", low_memory=False)
-loss = 'mean_absolute_error'
-
-# train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-11-31 23')
-# valid = times.select(df=ts, time_key=const.TIME, from_time='17-11-31 00', to_time='17-12-31 23')
-# test = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 00', to_time='18-01-31 23')
-
-train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-12-31 23')
-valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
-test = times.select(df=ts, time_key=const.TIME, from_time='18-01-01 00', to_time='18-01-31 23')
-
-# drop_time_location(train)
-# drop_time_location(valid)
-# drop_time_location(test)
-replace_time(train)
-replace_time(valid)
-replace_time(test)
-
-# pollutants = ['PM10']  # ['PM2.5', 'PM10', 'O3']
-columns = ['forecast', 'actual', 'station', 'pollutant']
-predictions = pd.DataFrame(data={}, columns=columns)
-# bj_features = 2 + 2 + 28 * 3 + 48
-# x = range(0, bj_features)
-# y = range(bj_features, train.columns.size)
-ld_features = 2 + 2 + 28 + 48
-x = range(0, ld_features)
-y = range(ld_features, train.columns.size)
-x_train = train.iloc[:, x]
-y_train = train.iloc[:, y]
-x_valid = valid.iloc[:, x]
-y_valid = valid.iloc[:, y]
-x_test = test.iloc[:, x]
-y_test = test.iloc[:, y]
-
-mlp = NeuralNet.mlp(x_train=x_train, y_train=y_train, x_valid=x_valid, y_valid=y_valid)
-
-y_predict = mlp.predict(x_test)
-# drop NaN records
-predictions.dropna(inplace=True)
-
-y_test = y_test.values.reshape(y_test.size)
-y_predict = np.array(y_predict).reshape(y_test.size)
-print('SMAPE', util.SMAPE(forecast=y_predict, actual=y_test))
-
-
-
-
+if __name__ == "__main__":
+    config = settings.config[const.DEFAULT]
+    base = config[const.BJ_PM25_]
+    mlp = MLP({
+        const.STATIONS: config[const.BJ_STATIONS],
+        const.FEATURES: base + "features.csv",
+        const.MODEL: base + "model.mdl",
+        const.LOSS_FUNCTION: const.MEAN_PERCENT
+    })
+    mlp.build().save()
+    print("Done!")

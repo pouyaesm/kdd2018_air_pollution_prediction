@@ -1,14 +1,13 @@
 from keras.models import Sequential
-from keras.layers import Dense, BatchNormalization, Activation, Dropout
-from keras.optimizers import Adagrad, Nadam
-from keras import backend as K
+from keras.layers import Dense, BatchNormalization, Activation
+from keras.optimizers import Nadam
 
 
 class NeuralNet:
 
     @staticmethod
     def add_default_layers(model):
-        # model.add(BatchNormalization())
+        model.add(BatchNormalization())
         model.add(Activation('relu'))
         return model
 
@@ -36,6 +35,6 @@ class NeuralNet:
         model.compile(loss=loss, optimizer=Nadam())
         # model.fit(x_train, y_train, epochs=75, batch_size=5000,
         #           validation_data=(x_valid, y_valid), verbose=1)
-        model.fit(x_train, y_train, epochs=75, batch_size=5000, verbose=1)
+        model.fit(x_train, y_train, epochs=150, batch_size=1000, verbose=1)
         return model
 

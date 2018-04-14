@@ -93,7 +93,7 @@ if __name__ == "__main__":
     fg = FeatureGenerator({
         const.OBSERVED: config[const.BJ_OBSERVED],
         const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: config[const.BJ_PM25_FEATURES],
+        const.FEATURES: config[const.BJ_PM25_],
         const.POLLUTANT: 'PM2.5'
     }, hour_x=48, hour_y=48)
     fg.load().basic().sample(75000).save()

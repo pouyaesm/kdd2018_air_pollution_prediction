@@ -94,7 +94,7 @@ if __name__ == "__main__":
     fg = FeatureGenerator({
         const.OBSERVED: config[const.LD_OBSERVED],
         const.STATIONS: config[const.LD_STATIONS],
-        const.FEATURES: config[const.LD_PM10_FEATURES],
+        const.FEATURES: config[const.LD_PM10_],
         const.POLLUTANT: 'PM10'
     }, hour_x=48, hour_y=48)
     fg.load().basic().dropna().save()
