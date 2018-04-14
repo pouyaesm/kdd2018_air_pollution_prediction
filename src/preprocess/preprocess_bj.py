@@ -17,8 +17,7 @@ class PreProcessBJ(PreProcess):
         self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
         self.stations = pd.DataFrame()  # all stations with their attributes such as type and position
 
-    @staticmethod
-    def get_live():
+    def get_live(self):
         """
             Load live observed data from KDD APIs
         :return:
@@ -39,6 +38,12 @@ class PreProcessBJ(PreProcess):
 
         return aq_live, meo_live
 
+    def fetch_save_all_live(self):
+        aq_live, meo_live = self.get_live()
+        aq_live.to_csv(self.config[const.BJ_AQ_LIVE], sep=';', index=False)
+        meo_live.to_csv(self.config[const.BJ_MEO_LIVE], sep=';', index=False)
+        return self
+
     def process(self):
         """
             Load and PreProcess the data
@@ -48,21 +53,20 @@ class PreProcessBJ(PreProcess):
         aq = pd.read_csv(self.config[const.BJ_AQ], low_memory=False) \
             .append(pd.read_csv(self.config[const.BJ_AQ_REST], low_memory=False)
                     , ignore_index=True, verify_integrity=True)
-
-        # Read beijing station meteorology data, append live data
-        meo = pd.read_csv(self.config[const.BJ_MEO], low_memory=False)
-
         # Rename stationId to station_id in quality table (the same as air weather table)
         aq.rename(columns={'stationId': const.ID}, inplace=True)
+        # Load and append air quality live data
+        aq = aq.append(pd.read_csv(self.config[const.BJ_AQ_LIVE], sep=';', low_memory=False)
+                , ignore_index=True, verify_integrity=True)
+        # drop possible overlapped duplicates
+        aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
-        # Real live data from APIs, and append it to offline data
-        if self.config[const.BJ_READ_LIVE]:
-            aq_live, meo_live = self.get_live()
-            aq = aq.append(aq_live, ignore_index=True, verify_integrity=True)
-            meo = meo.append(meo_live, ignore_index=True, verify_integrity=True)
-            # drop possible overlapped duplicates
-            aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
-            meo.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
+        # Read beijing station meteorology data, append live data
+        meo = pd.read_csv(self.config[const.BJ_MEO], low_memory=False)\
+            .append(pd.read_csv(self.config[const.BJ_MEO_LIVE], sep=';', low_memory=False)
+                                , ignore_index=True, verify_integrity=True)
+        # drop possible overlapped duplicates
+        meo.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Read type and position of air quality stations
         aq_stations = pd.read_csv(self.config[const.BJ_AQ_STATIONS], low_memory=False)
