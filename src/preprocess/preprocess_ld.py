@@ -9,8 +9,7 @@ from src.preprocess.preprocess import PreProcess
 
 class PreProcessLD(PreProcess):
 
-    @staticmethod
-    def get_live():
+    def get_live(self):
         """
             Load live observed data from KDD APIs
         :return:
@@ -20,12 +19,12 @@ class PreProcessLD(PreProcess):
         print('Live aQ has been read, count:', len(aq_live))
         return aq_live
 
-    def fetch_save_all_live(self):
+    def fetch_save_live(self):
         aq_live = self.get_live()
         aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
         aq_live.rename(columns={'time': const.TIME, 'PM25': 'PM2.5'}, inplace=True)
         aq_live.drop(columns=['id'], inplace=True)
-        aq_live.to_csv(self.config[const.LD_AQ_LIVE], sep=';', index=False)
+        aq_live.to_csv(self.config[const.AQ_LIVE], sep=';', index=False)
         return self
 
     def process(self):
@@ -34,12 +33,12 @@ class PreProcessLD(PreProcess):
         :return:
         """
         # Read two parts of london observed air quality data
-        aq = pd.read_csv(self.config[const.LD_AQ], low_memory=False)
-        aq_rest = pd.read_csv(self.config[const.LD_AQ_REST], low_memory=False)
-        aq_live = pd.read_csv(self.config[const.LD_AQ_LIVE], sep=';', low_memory=False)
+        aq = pd.read_csv(self.config[const.AQ], low_memory=False)
+        aq_rest = pd.read_csv(self.config[const.AQ_REST], low_memory=False)
+        aq_live = pd.read_csv(self.config[const.AQ_LIVE], sep=';', low_memory=False)
 
         # Read type and position of stations
-        aq_stations = pd.read_csv(self.config[const.LD_AQ_STATIONS], low_memory=False)
+        aq_stations = pd.read_csv(self.config[const.AQ_STATIONS], low_memory=False)
 
         # Remove the index column (first) of aq
         aq.drop(aq.columns[0], axis=1, inplace=True)
@@ -89,17 +88,6 @@ class PreProcessLD(PreProcess):
         self.stations[const.ID] = self.obs[const.ID].unique()
 
         return self
-
-    def save(self):
-        """
-            Save pre-processed data to files given in config
-        :return:
-        """
-        # Write pre-processed data to csv file
-        util.write(self.obs, self.config[const.LD_OBSERVED])
-        util.write(self.missing, self.config[const.LD_OBSERVED_MISS])
-        self.stations.to_csv(self.config[const.LD_STATIONS], sep=';', index=False)
-        print('Data saved.')
 
 
 if __name__ == "__main__":

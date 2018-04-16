@@ -1,6 +1,7 @@
 import settings, const
 import pandas as pd
 import numpy as np
+from src import util
 
 # access default configurations
 config = settings.config[const.DEFAULT]
@@ -32,19 +33,14 @@ indices = [const.ID, 'utc_time']
 df = qualityDf.merge(weatherDf, how='outer', left_on=indices, right_on=indices,
                      suffixes=['_aq', '_meo'])
 # only keep the max (non NaN) timestamp
-df["timestamp"] = df[["timestamp_aq", "timestamp_meo"]].max(axis=1)
-del df["timestamp_aq"]
-del df["timestamp_meo"]
+df = util.merge_columns(df, main='_aq', auxiliary='_meo')
 
 # Add air quality locations from stations file to the joined data set
 # Locations in df are from _meo data set, and locations from stations file are for _aq stations
 df = df.merge(stationsDf, how='outer', left_on=[const.ID], right_on=[const.ID],
               suffixes=['_meo', '_aq'])
 # only keep the max (non NaN) location
-df["longitude"] = df[["longitude_aq", "longitude_meo"]].max(axis=1)
-df["latitude"] = df[["latitude_aq", "latitude_meo"]].max(axis=1)
-del df["longitude_aq"], df["longitude_meo"]
-del df["latitude_aq"], df["latitude_meo"]
+df = util.merge_columns(df, main='_aq', auxiliary='_meo')
 
 # remove rows without station id which their existence is weird!
 df.dropna(subset=['ID'], inplace=True)

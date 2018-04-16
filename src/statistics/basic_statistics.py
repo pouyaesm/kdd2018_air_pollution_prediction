@@ -13,7 +13,7 @@ config = settings.config[const.DEFAULT]
 # Turn off plot interactive mode to let IDE display the plots
 plt.interactive(False)
 
-df = pd.read_csv(config[const.CLEAN_DATA], delimiter=';', low_memory=False)
+df = pd.read_csv(config[const.BJ_OBSERVED], delimiter=';', low_memory=False)
 print('No. data rows:', len(df.index))
 
 # Basic statistics of air quality

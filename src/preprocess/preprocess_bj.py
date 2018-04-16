@@ -38,10 +38,10 @@ class PreProcessBJ(PreProcess):
 
         return aq_live, meo_live
 
-    def fetch_save_all_live(self):
+    def fetch_save_live(self):
         aq_live, meo_live = self.get_live()
-        aq_live.to_csv(self.config[const.BJ_AQ_LIVE], sep=';', index=False)
-        meo_live.to_csv(self.config[const.BJ_MEO_LIVE], sep=';', index=False)
+        aq_live.to_csv(self.config[const.AQ_LIVE], sep=';', index=False)
+        meo_live.to_csv(self.config[const.MEO_LIVE], sep=';', index=False)
         return self
 
     def process(self):
@@ -50,26 +50,26 @@ class PreProcessBJ(PreProcess):
         :return:
         """
         # Read two parts of beijing observed air quality data
-        aq = pd.read_csv(self.config[const.BJ_AQ], low_memory=False) \
-            .append(pd.read_csv(self.config[const.BJ_AQ_REST], low_memory=False)
+        aq = pd.read_csv(self.config[const.AQ], low_memory=False) \
+            .append(pd.read_csv(self.config[const.AQ_REST], low_memory=False)
                     , ignore_index=True, verify_integrity=True)
         # Rename stationId to station_id in quality table (the same as air weather table)
         aq.rename(columns={'stationId': const.ID}, inplace=True)
         # Load and append air quality live data
-        aq = aq.append(pd.read_csv(self.config[const.BJ_AQ_LIVE], sep=';', low_memory=False)
+        aq = aq.append(pd.read_csv(self.config[const.AQ_LIVE], sep=';', low_memory=False)
                 , ignore_index=True, verify_integrity=True)
         # drop possible overlapped duplicates
         aq.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Read beijing station meteorology data, append live data
-        meo = pd.read_csv(self.config[const.BJ_MEO], low_memory=False)\
-            .append(pd.read_csv(self.config[const.BJ_MEO_LIVE], sep=';', low_memory=False)
+        meo = pd.read_csv(self.config[const.MEO], low_memory=False)\
+            .append(pd.read_csv(self.config[const.MEO_LIVE], sep=';', low_memory=False)
                                 , ignore_index=True, verify_integrity=True)
         # drop possible overlapped duplicates
         meo.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         # Read type and position of air quality stations
-        aq_stations = pd.read_csv(self.config[const.BJ_AQ_STATIONS], low_memory=False)
+        aq_stations = pd.read_csv(self.config[const.AQ_STATIONS], low_memory=False)
 
         # remove _aq, _meo postfixes from station ids
         aq[const.ID] = aq[const.ID].str.replace('_.*', '')  # name_aq -> name
@@ -113,18 +113,6 @@ class PreProcessBJ(PreProcess):
         self.missing = self.obs.isna().astype(int)
 
         return self
-
-    def save(self):
-        """
-            Save pre-processed data to files given in config
-        :return:
-        """
-        # Write pre-processed data to csv file
-        util.write(self.obs, self.config[const.BJ_OBSERVED])
-        util.write(self.missing, self.config[const.BJ_OBSERVED_MISS])
-        # self.missing.to_csv(, sep=';', index=False)
-        self.stations.to_csv(self.config[const.BJ_STATIONS], sep=';', index=False)
-        print('Data saved.')
 
 
 if __name__ == "__main__":

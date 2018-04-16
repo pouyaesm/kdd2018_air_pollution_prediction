@@ -86,6 +86,38 @@ def drop_columns(df: pd.DataFrame, end_with):
     return df
 
 
+def merge_columns(df: pd.DataFrame, main: str, auxiliary: str):
+    """
+        Merge two columns with same prefix into one column without suffix
+        For example: merge name_x and name_y into name
+    :param df:
+    :param main: suffix of main columns to be kept
+    :param auxiliary: suffix of auxiliary columns to fill na values of corresponding main columns
+    :return:
+    """
+    mains = set([name.split(main)[0] for name in list(df.filter(regex=main))])
+    auxiliaries = set([name.split(auxiliary)[0] for name in list(df.filter(regex=auxiliary))])
+    shared = list(mains.intersection(auxiliaries))  # columns shared in main and auxiliary
+    only_aux = list(auxiliaries.difference(mains))
+
+    # Fill nan values of main columns with auxiliary columns
+    main_columns = [name + main for name in shared]
+    aux_columns = [name + auxiliary for name in shared]
+    df = fillna(df, target=main_columns, source=aux_columns)
+
+    # Re-suffix auxiliary columns having no duplicate in main columns
+    # to keep exclusively auxiliary ones in final results
+    df = df.rename(columns={name + auxiliary: name + main for name in only_aux})
+
+    # Drop auxiliary columns
+    df = drop_columns(df=df, end_with=auxiliary)
+
+    # Remove suffix from main columns
+    df = df.rename(columns={col: col.split(main)[0] for col in df.columns})
+
+    return df
+
+
 def fillna(df: pd.DataFrame, target, source):
     """
         Fill some columns with another columns in a dataframe

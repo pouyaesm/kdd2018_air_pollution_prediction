@@ -25,6 +25,14 @@ class UtilTest(unittest.TestCase):
         expected = pd.DataFrame(data={'col_1': [1, 2]})
         pd_test.assert_frame_equal(util.drop_columns(df, end_with='_2'), expected)
 
+    # merge values of two columns with similar names to maximum one
+    def test_merge_columns(self):
+        df = pd.DataFrame(data={'id_1': [1, 3], 'name_1': ['a', np.nan], 'name_2': ['a', 'b'],
+                                'rate_2': [3, 4]})
+        expected = pd.DataFrame(data={'id': [1, 3], 'name': ['a', 'b'], 'rate': [3, 4]})
+        merged = util.merge_columns(df, main='_1', auxiliary='_2')
+        pd_test.assert_frame_equal(left=expected, right=merged)
+
     # test filling nan columns with another columns
     def test_fillna(self):
         df = pd.DataFrame(data={'col_1': [np.nan], 'col_2': [10]}, dtype=np.int64)
