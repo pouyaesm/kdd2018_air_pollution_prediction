@@ -15,7 +15,7 @@ config = settings.config[const.DEFAULT]
 plt.interactive(False)
 
 # Read cleaned data
-df = pd.read_csv(config[const.CLEAN_DATA], delimiter=';', low_memory=False).sample(frac=0.05)
+df = pd.read_csv(config[const.BJ_OBSERVED], delimiter=';', low_memory=False).sample(frac=0.05)
 
 # ---------------------------------
 # Pollutants' time-series
@@ -29,8 +29,8 @@ fig_pollutants.subplots_adjust(right=0.75)
 
 for index, pollutant in enumerate(pollutants):
     for station_id, group in df.groupby(['station_id']):
-        axes_pollutants[index].plot(pd.to_datetime(group['utc_time']), group[pollutant],
-                                    'o', label=station_id, alpha=0.5)
+        axes_pollutants[index].plot(pd.to_datetime(group['utc_time'], format=const.T_FORMAT),
+                                    group[pollutant], 'o', label=station_id, alpha=0.5)
         axes_pollutants[index].set_title(pollutant)
         axes_pollutants[index].set_yscale('log')  # plot values in log for visibility of smaller values
 
@@ -48,8 +48,8 @@ fig_weather.subplots_adjust(right=0.75)
 
 for index, measurement in enumerate(measurements):
     for station_id, group in df.groupby(['station_id']):
-        axes_weather[index].plot(pd.to_datetime(group['utc_time']), group[measurement],
-                                 'o', label=station_id, alpha=0.5)
+        axes_weather[index].plot(pd.to_datetime(group['utc_time'], format=const.T_FORMAT),
+                                 group[measurement], 'o', label=station_id, alpha=0.5)
         axes_weather[index].set_title(measurement)
 
 # place the stations legend to the right of plots in two columns
