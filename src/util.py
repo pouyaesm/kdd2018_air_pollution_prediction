@@ -145,3 +145,25 @@ def write(df: pd.DataFrame, address):
 def shift(l: list):
     l.append(l.pop(0))
 
+
+def nan_gap(values: list):
+    """
+        Average index interval created by sequential nan values
+    :param values:
+    :return:
+    """
+    last_index = len(values) - 1
+    first_nan = -1
+    last_nan = -1
+    gap_sum = 0
+    gap_count = 0
+    for index, value in enumerate(values):
+        if pd.isnull(value):
+            if first_nan == -1:
+                first_nan = index
+            last_nan = index
+        if first_nan != -1 and (not pd.isnull(value) or index == last_index):
+            gap_sum += last_nan - first_nan + 1
+            gap_count += 1
+            first_nan = -1
+    return gap_count, gap_sum, gap_sum / gap_count if gap_count > 0 else 0

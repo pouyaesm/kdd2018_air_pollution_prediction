@@ -68,10 +68,7 @@ class PreProcess:
         # Append grid live loaded offline
         grid_live = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
         grid_ts = grid_ts.append(grid_live, ignore_index=True, verify_integrity=True)
-
-        # Reformat observable time from compact to full, to be joinable with grid data
-        self.obs[const.TIME] = pd.to_datetime(self.obs[const.TIME], format=const.T_FORMAT) \
-            .dt.strftime(const.T_FORMAT_FULL)
+        grid_ts[const.TIME] = pd.to_datetime(grid_ts[const.TIME], utc=True)
 
         # Number of rows having missing value
         print('Grid rows with missing values:', np.count_nonzero(grid_ts[const.WSPD].isna()))

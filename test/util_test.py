@@ -67,3 +67,15 @@ class UtilTest(unittest.TestCase):
         values = [1, 2, 3]
         util.shift(values)
         np_test.assert_array_equal(x=[2, 3, 1], y=values)
+
+    def test_mean_nan_interval(self):
+        values = [np.nan, np.nan, 1, 2, np.nan, 3, np.nan, np.nan]
+        gap_count, gap_sum, gap_avg = util.nan_gap(values)
+        # expected: (2 + 1 + 2) / 3
+        self.assertEqual(first=5, second=gap_sum)
+        self.assertEqual(first=3, second=gap_count)
+        self.assertEqual(first=5/3, second=gap_avg)
+
+        values = [np.nan, np.nan, "a", "b"]
+        _, gap_sum, _ = util.nan_gap(values)
+        self.assertEqual(first=2, second=gap_sum)
