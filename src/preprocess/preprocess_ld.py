@@ -66,7 +66,7 @@ class PreProcessLD(PreProcess):
         aq[const.TIME] = pd.to_datetime(aq[const.TIME], utc=True)
 
         # Re-arrange columns order for better readability
-        aq = aq[[const.ID, const.TIME, 'PM2.5', 'PM10', 'NO2']]
+        self.obs = aq[[const.ID, const.TIME, 'PM2.5', 'PM10', 'NO2']]
 
         # Build and clean station data
         aq_stations.drop(columns=['api_data', 'historical_data', 'SiteName'], inplace=True)
@@ -78,14 +78,11 @@ class PreProcessLD(PreProcess):
         aq_stations[const.PREDICT] = (1 - aq_stations[const.PREDICT].isna()).astype(int)
         self.stations = aq_stations
 
-        # Sort data first based on station ids (alphabetically), then by time ascending
-        self.obs = aq.sort_values([const.ID, const.TIME], ascending=True)
-
-        # mark missing values
-        self.missing = self.obs.isna().astype(int)
-
         # set unique station ids temporary for filling iteration
         self.stations[const.ID] = self.obs[const.ID].unique()
+
+        # Sort data
+        self.sort()
 
         return self
 

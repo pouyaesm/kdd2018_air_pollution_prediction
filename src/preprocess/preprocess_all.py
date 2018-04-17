@@ -17,8 +17,7 @@ config_bj = {
     const.STATIONS: config[const.BJ_STATIONS],
     const.GRID_DATA: config[const.BJ_GRID_DATA],
     const.GRID_LIVE: config[const.BJ_GRID_LIVE],
-    const.GRIDS: config[const.BJ_GRIDS],
-    const.IS_TEST: False
+    const.GRIDS: config[const.BJ_GRIDS]
 }
 
 config_ld = {
@@ -31,20 +30,21 @@ config_ld = {
     const.STATIONS: config[const.LD_STATIONS],
     const.GRID_DATA: config[const.LD_GRID_DATA],
     const.GRID_LIVE: config[const.LD_GRID_LIVE],
-    const.GRIDS: config[const.LD_GRIDS],
-    const.IS_TEST: False
+    const.GRIDS: config[const.LD_GRIDS]
 }
 
-pre_process_bj = PreProcessBJ(config_bj).process().append_grid()
+append = False
+pre_process_bj = PreProcessBJ(config_bj).process().append_grid(include_history=~append)
 print('No. observed rows:', len(pre_process_bj.obs))
 print('No. stations:', len(pre_process_bj.stations),
       ', for prediction:', (pre_process_bj.stations['predict'] == 1).sum())
-pre_process_bj.save()
+pre_process_bj.save(append=append)
+del pre_process_bj  # to free memory
 
-pre_process_ld = PreProcessLD(config_ld).process().append_grid()
+pre_process_ld = PreProcessLD(config_ld).process().append_grid(include_history=~append)
 print('No. observed rows:', len(pre_process_ld.obs))
 print('No. stations:', len(pre_process_ld.stations),
       ', for prediction:', (pre_process_ld.stations['predict'] == 1).sum())
-pre_process_ld.save()
+pre_process_ld.save(append=append)
 
 

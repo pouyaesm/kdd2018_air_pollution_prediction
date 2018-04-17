@@ -104,13 +104,8 @@ class PreProcessBJ(PreProcess):
         # Remove reports with no station id
         self.obs.dropna(subset=[const.ID], inplace=True)
 
-        # Sort data first based on station ids (alphabetically), then by time ascending
-        # Using inplace creates a warning!
-        self.stations = self.stations.sort_values(const.ID, ascending=True)
-        self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
-
-        # mark missing values
-        self.missing = self.obs.isna().astype(int)
+        # Sort data
+        self.sort()
 
         return self
 

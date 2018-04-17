@@ -22,14 +22,28 @@ class PreProcess:
     def fetch_save_live(self):
         return self
 
+    def sort(self):
+        """
+            Sort data first based on station ids (alphabetically), then by time ascending
+            Using inplace creates a warning!
+        :return:
+        """
+        self.stations = self.stations.sort_values(const.ID, ascending=True)
+        self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
+        return self
+
     def fill(self):
         """
             Fill missing value as the average of two nearest values in the time-line
             Per station
+            Assumption: observed data must be sorted by station then by time
         :return:
         """
         # Reset time series indices to ensure a closed interval
         self.obs.reset_index(drop=True, inplace=True)
+
+        # mark missing values
+        self.missing = self.obs.isna().astype(int)
 
         columns = ['PM2.5', 'PM10', 'O3', 'NO2', 'CO', 'SO2',
                    'temperature', 'pressure', 'humidity', 'wind_speed', 'wind_direction']
@@ -49,9 +63,9 @@ class PreProcess:
 
         return self
 
-    def append_grid(self):
+    def append_grid(self, include_history=False):
         """
-            Load grid offline and live data, append the colplementary weather info
+            Load grid offline and live data, append the complementary weather info
             to observed time series
         :return:
         """
@@ -60,9 +74,10 @@ class PreProcess:
 
         # Read grid data by chunk to avoid low memory exception
         iterator = pd.read_csv(self.config[const.GRID_DATA],
-                               low_memory=False, iterator=True, chunksize=200000)
+                               low_memory=False, iterator=True, chunksize=400000)
+        # sample when history is not included
         grid_ts = pd.concat(iterator, ignore_index=True) \
-            if not self.config[const.IS_TEST] else iterator.read(nrows=10000)  # sample for testing fast
+            if include_history else iterator.read(nrows=5000)
         grid_ts.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
 
         # Append grid live loaded offline
@@ -94,6 +109,9 @@ class PreProcess:
         # Drop position and grid_id in observed data
         self.obs.drop(columns=[const.LONG, const.LAT, const.GID], inplace=True)
 
+        # Sort data
+        self.sort()
+
         return self
 
     def get_live_grid(self):
@@ -119,11 +137,23 @@ class PreProcess:
         print('Grid data fetched and saved.')
         return self
 
-    def save(self):
+    def save(self, append=False):
         """
             Save pre-processed data to files given in config
         :return:
         """
+        if append:
+            # Read and append saved observed data
+            self.obs = pd.read_csv(self.config[const.OBSERVED], sep=';', low_memory=True) \
+                .append(other=self.obs, ignore_index=True, verify_integrity=True)
+            self.obs.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
+
+            # Sort data
+            self.sort()
+
+            # mark missing values
+            self.missing = self.obs.isna().astype(int)
+
         # Write pre-processed data to csv file
         util.write(self.obs, self.config[const.OBSERVED])
         util.write(self.missing, self.config[const.OBSERVED_MISSING])
