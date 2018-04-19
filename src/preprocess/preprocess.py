@@ -32,7 +32,7 @@ class PreProcess:
         self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
         return self
 
-    def fill(self):
+    def fill(self, max_interval=0):
         """
             Fill missing value as the average of two nearest values in the time-line
             Per station
@@ -57,7 +57,8 @@ class PreProcess:
                 station_ts = self.obs.loc[selector, column]
                 if station_ts.isnull().all():
                     continue  # no value to fill the missing ones!
-                self.obs.loc[selector, column] = util.fill(station_ts, inplace=True)
+                self.obs.loc[selector, column] \
+                    = util.fill(station_ts, max_interval=max_interval, inplace=True)
 
         print('Missing values filled in', time.time() - start_time, 'secs')
 

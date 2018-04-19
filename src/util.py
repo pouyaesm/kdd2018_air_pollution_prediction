@@ -23,9 +23,10 @@ def pretty(value, decimal):
         return ("%0." + str(decimal) + "f") % value
 
 
-def fill(series: pd.Series, inplace=False):
+def fill(series: pd.Series, max_interval=0, inplace=False):
     """
         Replace NaN values with average of nearest non NaN neighbors
+    :param max_interval: id number of consecutive NaN values > max_interval, they are not filled
     :param series:
     :param inplace:
     :return:
@@ -44,17 +45,19 @@ def fill(series: pd.Series, inplace=False):
         # Replace NaN values with their boundary average
         # when a NaN interval is started, and is ending with a non-NaN value or end of list
         if region[0] != -1 and (not np.isnan(value) or index == ubound):
-            start = region[0] - lbound  # offset index to 0
-            end = region[1] - lbound  # offset index to 0
-            first_value = filled.values[start - 1] if region[0] > lbound else np.nan
-            last_value = filled.values[end + 1] if region[1] < ubound else np.nan
-            # Duplicate one boundary to another if one does not exist
-            # this happens when a series starts or ends with a NaN
-            first_value = last_value if np.isnan(first_value) else first_value
-            last_value = first_value if np.isnan(last_value) else last_value
-            # Set average of boundaries for the NaN interval
-            filled.values[start:end + 1] = \
-                [(first_value + last_value) / 2] * (end - start + 1)
+            # do not fill NaN intervals wider than max_interval
+            if max_interval <= 0 or region[1] - region[0] + 1 <= max_interval:
+                start = region[0] - lbound  # offset index to 0
+                end = region[1] - lbound  # offset index to 0
+                first_value = filled.values[start - 1] if region[0] > lbound else np.nan
+                last_value = filled.values[end + 1] if region[1] < ubound else np.nan
+                # Duplicate one boundary to another if one does not exist
+                # this happens when a series starts or ends with a NaN
+                first_value = last_value if np.isnan(first_value) else first_value
+                last_value = first_value if np.isnan(last_value) else last_value
+                # Set average of boundaries for the NaN interval
+                filled.values[start:end + 1] = \
+                    [(first_value + last_value) / 2] * (end - start + 1)
             # Reset NaN interval indicators
             region[0] = region[1] = -1
 
