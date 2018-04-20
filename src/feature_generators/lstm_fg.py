@@ -114,11 +114,22 @@ class LSTMFG:
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    fg = LSTMFG({
+    pollutant = 'PM2.5'
+    features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
+    features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
+    config_bj = {
         const.OBSERVED: config[const.BJ_OBSERVED],
         const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: config[const.BJ_PM10_] + 'lstm_features.csv',
-        const.POLLUTANT: 'PM10'
-    }, input_hours=48)
+        const.FEATURES: features_bj,
+        const.POLLUTANT: pollutant
+    }
+    config_ld = {
+        const.OBSERVED: config[const.LD_OBSERVED],
+        const.STATIONS: config[const.LD_STATIONS],
+        const.FEATURES: features_ld,
+        const.POLLUTANT: pollutant
+    }
+    fg = LSTMFG(config_bj, input_hours=48)
+    # fg = LSTMFG(config_ld, input_hours=48)
     fg.generate().dropna().save()
     print("Done!")

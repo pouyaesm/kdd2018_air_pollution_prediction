@@ -120,8 +120,9 @@ class LSTM:
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    lstm = LSTM({
-        const.FEATURES: config[const.BJ_PM10_] + 'lstm_features.csv',
-    })
-    lstm.train()
+    pollutant = 'PM25'
+    config_bj = {const.FEATURES: config[getattr(const, 'BJ_{p}_'.format(p=pollutant))] + 'lstm_features.csv'}
+    config_ld = {const.FEATURES: config[getattr(const, 'LD_{p}_'.format(p=pollutant))] + 'lstm_features.csv'}
+    lstm = LSTM(config_bj).train()
+    # lstm = LSTM(config_ld).train()
     print("Done!")
