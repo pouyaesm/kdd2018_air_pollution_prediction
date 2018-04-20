@@ -130,7 +130,8 @@ if __name__ == "__main__":
         const.FEATURES: features_ld,
         const.POLLUTANT: pollutant
     }
-    fg = LSTMFG(config_bj, input_hours=1)
-    # fg = LSTMFG(config_ld, input_hours=48)
+    # fg = LSTMFG(config_bj, input_hours=3)
+    # fg.generate().dropna().sample(140000).save()
+    fg = LSTMFG(config_ld, input_hours=3)
     fg.generate().dropna().save()
     print("Done!")

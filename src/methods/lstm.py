@@ -158,6 +158,6 @@ if __name__ == "__main__":
         const.FEATURES: features_ld,
         const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
     }
-    lstm = LSTM(config_bj, time_steps=1).train()
-    # lstm = LSTM(config_ld).train()
+    # lstm = LSTM(config_bj, time_steps=3).train()
+    lstm = LSTM(config_ld, time_steps=3).train()
     print("Done!")
