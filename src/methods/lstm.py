@@ -51,7 +51,7 @@ class LSTM:
         init = tf.global_variables_initializer()
         sess = tf.Session()
         sess.run(init)
-        for i in range(0, 1200):
+        for i in range(0, 3000):
             batch_x, batch_y = fg.next(batch_size=batch_size, time_steps=time_steps)
             sess.run(opt, feed_dict={x: batch_x, y: batch_y})
             if i % 10 == 0:
@@ -82,8 +82,8 @@ class LSTM:
         input = tf.unstack(x, time_steps, 1)
 
         # defining the network
-        # lstm_layer = rnn.BasicLSTMCell(num_units, forget_bias=1)
-        lstm_layer = rnn.BasicLSTMCell(num_units)
+        # lstm_layer = rnn.BasicLSTMCell(num_units)
+        lstm_layer = rnn.LSTMCell(num_units)
         outputs, _ = rnn.static_rnn(lstm_layer, input, dtype="float32")
 
         # converting last output of dimension [batch_size,num_units] to [batch_size,n_classes] by out_weight multiplication
