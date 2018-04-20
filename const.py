@@ -52,6 +52,7 @@ LD_READ_LIVE = 'LD_READ_LIVE'
 LD_FEATURES = 'LD_FEATURES'
 LD_PM25_ = 'LD_PM25_'
 LD_PM10_ = 'LD_PM10_'
+LD_O3_ = 'LD_O3_'
 
 MODEL = 'model'
 GRIDS = 'grids'
@@ -97,7 +98,7 @@ def func():
     global ID, GID, TIME, PREDICT, LONG, LAT, TEMP, PRES, HUM, WSPD, WDIR, S_TYPE
     global T_FORMAT
     global FEATURES, BJ_PM25_, BJ_PM10_, BJ_O3_
-    global LD_FEATURES, LD_PM25_, LD_PM10_
+    global LD_FEATURES, LD_PM25_, LD_PM10_, LD_O3_
     global POLLUTANT
     global LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
     global MODEL

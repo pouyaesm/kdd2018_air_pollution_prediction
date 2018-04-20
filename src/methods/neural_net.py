@@ -1,6 +1,6 @@
 from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Activation
-from keras.optimizers import Nadam
+from keras.optimizers import Nadam, Adam
 
 
 class NeuralNet:
@@ -32,9 +32,9 @@ class NeuralNet:
         # NeuralNet.add_default_layers(model)
         model.add(Dense(units=output_size))
 
-        model.compile(loss=loss, optimizer=Nadam())
+        model.compile(loss=loss, optimizer=Adam(lr=0.01))
         # model.fit(x_train, y_train, epochs=75, batch_size=5000,
         #           validation_data=(x_valid, y_valid), verbose=1)
-        model.fit(x_train, y_train, epochs=150, batch_size=1000, verbose=1)
+        model.fit(x_train, y_train, epochs=100, batch_size=1000, verbose=1)
         return model
 

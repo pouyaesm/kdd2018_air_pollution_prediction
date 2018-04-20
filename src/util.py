@@ -142,7 +142,7 @@ def write(df: pd.DataFrame, address):
     :return:
     """
     df.to_csv(address, sep=';', index=False, float_format='%.1f'
-              , date_format=const.T_FORMAT, chunksize=200000)
+              , date_format=const.T_FORMAT, chunksize=100000)
 
 
 def shift(l: list):

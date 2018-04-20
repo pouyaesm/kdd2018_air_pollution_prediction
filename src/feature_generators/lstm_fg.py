@@ -109,12 +109,12 @@ class LSTMFG:
         :return:
         """
         util.write(self.features, address=self.config[const.FEATURES])
-        print(len(self.features.index), ' feature vectors are written to file')
+        print(len(self.features.index), 'feature vectors are written to file')
 
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    pollutant = 'PM2.5'
+    pollutant = 'O3'
     features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
     features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
     config_bj = {

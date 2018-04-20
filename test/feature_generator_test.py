@@ -1,12 +1,6 @@
 import unittest
-import numpy as np
-import pandas as pd
 import const
-import numpy.testing as np_test
-import pandas.util.testing as pd_test
-import pandas.util.testing as pd_test
-from src.preprocess import reform
-from src.preprocess.feature_generator_bj import FeatureGenerator
+from src.feature_generators.mlp_fg import FeatureGenerator
 
 
 class FeatureGeneratorTest(unittest.TestCase):

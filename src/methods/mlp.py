@@ -53,9 +53,13 @@ class MLP:
         valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
         test = times.select(df=ts, time_key=const.TIME, from_time='18-01-01 00', to_time='18-01-31 23')
 
-        MLP.replace_time(train)
-        MLP.replace_time(valid)
-        MLP.replace_time(test)
+        # MLP.replace_time(train)
+        # MLP.replace_time(valid)
+        # MLP.replace_time(test)
+
+        train.drop(columns=[const.ID, const.TIME], inplace=True)
+        valid.drop(columns=[const.ID, const.TIME], inplace=True)
+        test.drop(columns=[const.ID, const.TIME], inplace=True)
 
         # pollutants = ['PM10']  # ['PM2.5', 'PM10', 'O3']
         # columns = ['forecast', 'actual', 'station', 'pollutant']
@@ -99,12 +103,20 @@ class MLP:
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    base = config[const.BJ_PM25_]
-    mlp = MLP({
+    base_bj = config[const.BJ_PM10_]
+    base_ld = config[const.LD_PM10_]
+    config_bj = {
         const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: base + "features.csv",
-        const.MODEL: base + "model.mdl",
+        const.FEATURES: base_bj + "mlp_features.csv",
+        const.MODEL: base_bj + "mlp_model.mdl",
         const.LOSS_FUNCTION: const.MEAN_PERCENT
-    })
-    mlp.build().save()
+    }
+    config_ld = {
+        const.STATIONS: config[const.LD_STATIONS],
+        const.FEATURES: base_ld + "mlp_features.csv",
+        const.MODEL: base_ld + "mlp_model.mdl",
+        const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
+    }
+    # mlp = MLP(config_bj).build().save()
+    mlp = MLP(config_ld).build().save()
     print("Done!")
