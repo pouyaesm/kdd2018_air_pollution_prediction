@@ -170,3 +170,7 @@ def nan_gap(values: list):
             gap_count += 1
             first_nan = -1
     return gap_count, gap_sum, gap_sum / gap_count if gap_count > 0 else 0
+
+
+def row_to_matrix(matrix: np.ndarray, row_split=1):
+    return np.reshape(matrix, (matrix.shape[0], row_split, matrix.shape[1] // row_split))

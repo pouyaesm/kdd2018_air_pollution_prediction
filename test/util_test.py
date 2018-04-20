@@ -81,3 +81,13 @@ class UtilTest(unittest.TestCase):
         values = [np.nan, np.nan, "a", "b"]
         _, gap_sum, _ = util.nan_gap(values)
         self.assertEqual(first=2, second=gap_sum)
+
+    @staticmethod
+    def test_two_d_to_3d():
+        two_d = np.arange(8).reshape(2, 4)
+        three_d = util.row_to_matrix(two_d, 2)
+        expected = np.array([
+            [[0, 1], [2, 3]],
+            [[4, 5], [6, 7]]]
+        )
+        np_test.assert_array_equal(expected, three_d)
