@@ -108,15 +108,16 @@ class LSTMFG:
             Save the extracted features to file
         :return:
         """
-        util.write(self.features, address=self.config[const.FEATURES])
+        util.write(self.features, address=self.config[const.FEATURES] +
+                                          str(self.input_hours) + '_lstm_features.csv')
         print(len(self.features.index), 'feature vectors are written to file')
 
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    pollutant = 'O3'
-    features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
-    features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')] + 'lstm_features.csv'
+    pollutant = 'PM10'
+    features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')]
+    features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')]
     config_bj = {
         const.OBSERVED: config[const.BJ_OBSERVED],
         const.STATIONS: config[const.BJ_STATIONS],
@@ -129,7 +130,7 @@ if __name__ == "__main__":
         const.FEATURES: features_ld,
         const.POLLUTANT: pollutant
     }
-    fg = LSTMFG(config_bj, input_hours=48)
+    fg = LSTMFG(config_bj, input_hours=1)
     # fg = LSTMFG(config_ld, input_hours=48)
     fg.generate().dropna().save()
     print("Done!")
