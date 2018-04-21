@@ -1,6 +1,8 @@
 # general utilities used throughout the project
 import numpy as np
 import pandas as pd
+import requests
+import sys
 import const
 
 
@@ -180,3 +182,25 @@ def add_columns(df: pd.DataFrame, columns: np.ndarray, name_prefix='c'):
     for c in range(0, columns.shape[1]):
         df[name_prefix + str(c)] = pd.Series(data=columns[:, c], index=df.index)
     return df
+
+
+def rreplace(string, old, new, occurrence):
+    return new.join(string.rsplit(old, occurrence))
+
+
+def download(url):
+    response = requests.get(url, stream=True)
+    total_length = response.headers.get('content-length')
+
+    if total_length is None:  # no content length header
+        return response.content.decode('utf-8')
+    else:
+        downloaded = 0
+        total_length = int(total_length)
+        content = ''
+        for data in response.iter_content(chunk_size=1048576, decode_unicode=True):
+            downloaded += len(data)
+            content = content.join(data)
+            done = int(50 * downloaded / total_length)
+            print("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
+        return content

@@ -34,19 +34,25 @@ config_ld = {
 }
 
 append = False
-pre_process_bj = PreProcessBJ(config_bj).process().append_grid(include_history=~append)\
-    .fill(max_interval=3)
-print('No. observed rows:', len(pre_process_bj.obs))
-print('No. stations:', len(pre_process_bj.stations),
-      ', for prediction:', (pre_process_bj.stations['predict'] == 1).sum())
-pre_process_bj.save_features(append=append)
-del pre_process_bj  # to free memory
+do_bj = False
+do_ld = True
+if do_bj:
+    print('Processing beijing..')
+    pre_process_bj = PreProcessBJ(config_bj).process().append_grid(include_history=~append)\
+        .fill(max_interval=3)
+    print('No. observed rows:', len(pre_process_bj.obs))
+    print('No. stations:', len(pre_process_bj.stations),
+          ', for prediction:', (pre_process_bj.stations['predict'] == 1).sum())
+    pre_process_bj.save(append=append)
+    del pre_process_bj  # to free memory
 
-pre_process_ld = PreProcessLD(config_ld).process().append_grid(include_history=~append)\
-    .fill(max_interval=3)
-print('No. observed rows:', len(pre_process_ld.obs))
-print('No. stations:', len(pre_process_ld.stations),
-      ', for prediction:', (pre_process_ld.stations['predict'] == 1).sum())
-pre_process_ld.save_features(append=append)
+if do_ld:
+    print('Processing london..')
+    pre_process_ld = PreProcessLD(config_ld).process().append_grid(include_history=~append)\
+        .fill(max_interval=3)
+    print('No. observed rows:', len(pre_process_ld.obs))
+    print('No. stations:', len(pre_process_ld.stations),
+          ', for prediction:', (pre_process_ld.stations['predict'] == 1).sum())
+    pre_process_ld.save(append=append)
 
 

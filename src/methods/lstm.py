@@ -20,13 +20,16 @@ class LSTM(Model):
         self.model = Sequential()
         self.time_steps = time_steps
         # create tensorflow session
+        tf.reset_default_graph()
         self.session = tf.Session()
         self.model = dict()  # contains different points in a tensorflow computation graph
         self.fg = self.fg = LSTMFG({
-                const.FEATURES: self.config[const.FEATURES],
+                const.FEATURE_DIR: self.config[const.FEATURE_DIR],
+                const.FEATURE: self.config[const.FEATURE],
         }, input_hours=self.time_steps)
         # Path to save and restore the model
-        self._model_path = self.config[const.FEATURES] + str(self.time_steps) + '_lstm_model.mdl'
+        self._model_path = self.config[const.MODEL_DIR] + \
+                           self.config[const.FEATURE] + str(self.time_steps) + '_lstm.mdl'
 
     @staticmethod
     def replace_time(data: pd.DataFrame):
@@ -122,7 +125,7 @@ class LSTM(Model):
         # initialize session variables
         self.session.run(tf.global_variables_initializer())
 
-        for i in range(0, 3000):
+        for i in range(0, 3500):
             batch_x, batch_y = self.fg.next(batch_size=batch_size, time_steps=self.time_steps)
             self.session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
             # summary, _ = sess.run([summary_all, train_step], feed_dict={x: batch_x, y: batch_y})
@@ -133,7 +136,12 @@ class LSTM(Model):
                 print(i, " Loss ", los, ", SMAPE ", smp)
 
         self.model = model  # make model accessible to other methods
-        self.save_model()
+
+        # Report SMAPE error on test set
+        test_data, test_label = self.fg.test(time_steps=self.time_steps)
+        print("Testing SMAPE:", self.session.run(model['smape'], feed_dict=
+        {model['x']: test_data, model['y']: test_label}))
+
         return self
 
     def test(self):
@@ -146,8 +154,6 @@ class LSTM(Model):
         return self
 
     def evaluate(self, actual, forecast):
-        # return self.session.run(self.model['smape'],
-        #                             feed_dict={self.model['x']: batch_x, model['y']: batch_y})
         actual_array = actual.reshape(actual.size)
         forecast_array = forecast.reshape(forecast.size)
         return util.SMAPE(forecast=forecast_array, actual=actual_array)
@@ -168,19 +174,27 @@ class LSTM(Model):
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    pollutant = 'PM2.5'
-    features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')]
-    features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')]
+    cases = {
+        'BJ': [
+            # 'PM2.5',
+            'PM10',
+            'O3'
+        ],
+        'LD': [
+            'PM2.5',
+            'PM10'
+        ]
+    }
     # For low values of pollutants MAE works better than SMAPE!
     # So for all pollutants of london and O3 of beijing we use MAE
-    config_bj = {
-        const.FEATURES: features_bj,
-        const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
-    }
-    config_ld = {
-        const.FEATURES: features_ld,
-        const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
-    }
-    lstm = LSTM(config_bj, time_steps=48).train()
-    # lstm = LSTM(config_ld, time_steps=24).train()
-    print("Done!")
+    for city in cases:
+        for pollutant in cases[city]:
+            print(city, pollutant, "started..")
+            cfg = {
+                const.MODEL_DIR: config[const.MODEL_DIR],
+                const.FEATURE_DIR: config[const.FEATURE_DIR],
+                const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
+                const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
+            }
+            lstm = LSTM(cfg, time_steps=48).train().save_model()
+            print(city, pollutant, "done!")

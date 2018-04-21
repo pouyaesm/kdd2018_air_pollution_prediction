@@ -20,11 +20,14 @@ config_ld = {
     const.GRID_LIVE: config[const.LD_GRID_LIVE]
 }
 
+pre_process_bj = PreProcessBJ(config_bj)
+pre_process_ld = PreProcessLD(config_ld)
+
 # ------- Observed Air Quality Data ---------- #
 print('Fetch observed data for Beijing...')
-pre_process_bj = PreProcessBJ(config_bj).fetch_save_live()
+pre_process_bj.fetch_save_live()
 print('Fetch observed data for London...')
-pre_process_ld = PreProcessLD(config_ld).fetch_save_live()
+pre_process_ld.fetch_save_live()
 
 # ------- Grid Meteorology Data ---------- #
 print('Fetch grid data for Beijing...')

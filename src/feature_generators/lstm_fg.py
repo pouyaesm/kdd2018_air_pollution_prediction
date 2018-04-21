@@ -23,7 +23,9 @@ class LSTMFG:
         self._test = pd.DataFrame()
         self._station_count = 0
         self._valid_stations = pd.DataFrame()
-        self._features_path = self.config[const.FEATURES] + str(self.input_hours) + '_lstm_features.csv'
+        self._features_path = self.config[const.FEATURE_DIR] + \
+                              self.config[const.FEATURE] + \
+                              str(self.input_hours) + '_lstm.csv'
 
     def generate(self):
         # load_model data
@@ -42,28 +44,10 @@ class LSTMFG:
             s_data = data[station_id]
             s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
             first_x_end = self.input_hours - 1
-            # temperature of last 7 days every 3 hours
-            # temp_h6_28 = times.split(time=s_time, value=s_data[const.TEMP].tolist(),
-            #                          hours=6, step=28, skip=first_x_end)
-            # wspd_h6_28 = times.split(time=s_time, value=s_data[const.WSPD].tolist(),
-            #                          hours=6, step=28, skip=first_x_end)
-            # dayofweek = [time.dayofweek +  for time in enumerate(t)]
-            # location of station
-            # loc = [[s_info[const.LONG], s_info[const.LAT]]] * (len(s_time) - self.input_hours)
             sid = [station_id] * (len(s_time) - self.input_hours)
             s_value = s_data[self.config[const.POLLUTANT]].tolist()
             t, value = reform.split(time=s_time, value=s_value, step=self.input_hours)
             label = times.split(time=s_time, value=s_value, hours=1, step=48, skip=first_x_end + 48)
-            # temperature = times.split(time=s_time, value=s_data[const.TEMP], hours=1,
-            #                      step=self.input_hours, skip=first_x_end)
-            # pressure = times.split(time=s_time, value=s_data[const.PRES], hours=1,
-            #                    step=self.input_hours, skip=first_x_end)
-            # humidity = times.split(time=s_time, value=s_data[const.HUM], hours=1,
-            #                    step=self.input_hours, skip=first_x_end)
-            # wind_speed = times.split(time=s_time, value=s_data[const.WSPD], hours=1,
-            #                        step=self.input_hours, skip=first_x_end)
-            # wind_direction = times.split(time=s_time, value=s_data[const.WDIR], hours=1,
-            #                          step=self.input_hours, skip=first_x_end)
             # values to be predicted
             feature_set = [[s] + [t] + v + l for s, t, v, l in zip(sid, t, value, label)]
             features.extend(feature_set)
@@ -103,7 +87,8 @@ class LSTMFG:
         return self
 
     def sample(self, count):
-        self.features = self.features.sample(n=count)
+        if count > 0:
+            self.features = self.features.sample(n=count)
         return self
 
     def save_features(self):
@@ -116,30 +101,35 @@ class LSTMFG:
 
     def save_test(self, predicted_values):
         augmented_test = util.add_columns(self._test, columns=predicted_values, name_prefix='f')
-        util.write(augmented_test, address=self.config[const.FEATURES] +
-                                          str(self.input_hours) + '_lstm_test.csv')
+        test_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + \
+                    str(self.input_hours) + '_lstm_tests.csv'
+        util.write(augmented_test, address=test_path)
         print(len(augmented_test.index), 'predicted tests are written to file')
 
 
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
-    pollutant = 'PM10'
-    features_bj = config[getattr(const, 'BJ_' + pollutant.replace('.', '') + '_')]
-    features_ld = config[getattr(const, 'LD_' + pollutant.replace('.', '') + '_')]
-    config_bj = {
-        const.OBSERVED: config[const.BJ_OBSERVED],
-        const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: features_bj,
-        const.POLLUTANT: pollutant
-    }
-    config_ld = {
-        const.OBSERVED: config[const.LD_OBSERVED],
-        const.STATIONS: config[const.LD_STATIONS],
-        const.FEATURES: features_ld,
-        const.POLLUTANT: pollutant
-    }
-    # fg = LSTMFG(config_bj, input_hours=3)
-    # fg.generate().dropna().sample(140000).save_features()
-    fg = LSTMFG(config_ld, input_hours=3)
-    fg.generate().dropna().save_features()
-    print("Done!")
+    cases = {
+        'BJ': {
+            'PM2.5': 200000,
+            'PM10': -1,
+            'O3': 200000,
+            },
+        'LD': {
+            'PM2.5': -1,
+            'PM10': -1,
+            }
+        }
+    for city in cases:
+        for pollutant, sample_count in cases[city].items():
+            print(city, pollutant, "started..")
+            cfg = {
+                const.OBSERVED: config[getattr(const, city + '_OBSERVED')],
+                const.STATIONS: config[getattr(const, city + '_STATIONS')],
+                const.FEATURE_DIR: config[const.FEATURE_DIR],
+                const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
+                const.POLLUTANT: pollutant
+            }
+            fg = LSTMFG(cfg, input_hours=48)
+            fg.generate().dropna().sample(sample_count).save_features()
+            print(city, pollutant, "done!")

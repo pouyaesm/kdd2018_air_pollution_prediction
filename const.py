@@ -9,7 +9,8 @@ AQ_STATIONS = 'AQ_STATIONS'
 MEO = 'MEO'
 MEO_LIVE = 'MEO_LIVE'
 STATIONS = 'STATIONS'
-FEATURES = 'FEATURES'
+FEATURE = 'FEATURE'
+FEATURE_DIR = 'FEATURE_DIR'
 POLLUTANT = 'pollutant'
 LOSS_FUNCTION = 'loss'
 IS_TEST = 'is_test'
@@ -55,6 +56,7 @@ LD_PM10_ = 'LD_PM10_'
 LD_O3_ = 'LD_O3_'
 
 MODEL = 'model'
+MODEL_DIR = 'model_dir'
 GRIDS = 'grids'
 GRID_DATA = 'grid_data'
 GRID_URL = 'grid_url'
@@ -97,11 +99,11 @@ def func():
     global LD_READ_LIVE
     global ID, GID, TIME, PREDICT, LONG, LAT, TEMP, PRES, HUM, WSPD, WDIR, S_TYPE
     global T_FORMAT
-    global FEATURES, BJ_PM25_, BJ_PM10_, BJ_O3_
+    global FEATURE, FEATURE_DIR, BJ_PM25_, BJ_PM10_, BJ_O3_
     global LD_FEATURES, LD_PM25_, LD_PM10_, LD_O3_
     global POLLUTANT
     global LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
-    global MODEL
+    global MODEL, MODEL_DIR
     global GRIDS, GRID_DATA, GRID_LIVE, GRID_URL, BJ_GRIDS, BJ_GRID_DATA, BJ_GRID_URL
     global LD_GRIDS, LD_GRID_DATA, LD_GRID_URL, BJ_GRID_LIVE, LD_GRID_LIVE
     global MNIST_FOLDER

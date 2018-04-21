@@ -91,7 +91,7 @@ class FeatureGenerator:
             Save the extracted features to file
         :return:
         """
-        util.write(self.features, address=self.config[const.FEATURES])
+        util.write(self.features, address=self.config[const.FEATURE])
         print(len(self.features.index), 'feature vectors are written to file')
 
 
@@ -103,13 +103,13 @@ if __name__ == "__main__":
     config_bj = {
         const.OBSERVED: config[const.BJ_OBSERVED],
         const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: features_bj,
+        const.FEATURE: features_bj,
         const.POLLUTANT: pollutant
     }
     config_ld = {
         const.OBSERVED: config[const.LD_OBSERVED],
         const.STATIONS: config[const.LD_STATIONS],
-        const.FEATURES: features_ld,
+        const.FEATURE: features_ld,
         const.POLLUTANT: pollutant
     }
     fg = FeatureGenerator(config_bj, hour_x=48, hour_y=48)

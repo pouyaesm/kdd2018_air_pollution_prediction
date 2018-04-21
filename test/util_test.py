@@ -99,3 +99,9 @@ class UtilTest(unittest.TestCase):
         util.add_columns(df, columns, name_prefix='b')
         expected = pd.DataFrame(data={'a': [1, 2], 'b0': [3, 4], 'b1': [5, 6]}, index=[10, 11])
         pd_test.assert_frame_equal(left=expected, right=df)
+
+    def test_rreplace(self):
+        # replace last two "1" with reverse_replace
+        string = '121212'
+        replaced = util.rreplace(string, '1', '2', 2)
+        self.assertEqual(first='122222', second=replaced)

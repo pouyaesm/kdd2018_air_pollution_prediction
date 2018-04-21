@@ -75,7 +75,7 @@ class PreProcess:
 
         # Read grid data by chunk to avoid low memory exception
         iterator = pd.read_csv(self.config[const.GRID_DATA],
-                               low_memory=False, iterator=True, chunksize=400000)
+                               low_memory=False, iterator=True, chunksize=100000)
         # sample when history is not included
         grid_ts = pd.concat(iterator, ignore_index=True) \
             if include_history else iterator.read(nrows=5000)
@@ -120,9 +120,7 @@ class PreProcess:
             Load live observed data from KDD APIs
         :return:
         """
-        grid_live = pd.read_csv(io.StringIO(
-            requests.get(self.config[const.GRID_URL]).content.decode('utf-8')
-        ))
+        grid_live = pd.read_csv(io.StringIO(util.download(self.config[const.GRID_URL])))
         print('Live Grid has been read, count:', len(grid_live))
         # Rename fields to be compatible with offline data
         grid_live.rename(columns={

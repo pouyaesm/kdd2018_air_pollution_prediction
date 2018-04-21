@@ -43,7 +43,7 @@ class MLP:
     def build(self):
         # load_model data
         # stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
-        ts = pd.read_csv(self.config[const.FEATURES], sep=";", low_memory=False)
+        ts = pd.read_csv(self.config[const.FEATURE], sep=";", low_memory=False)
 
         # train = times.select(df=ts, time_key=const.TIME, from_time='00-01-01 00', to_time='17-11-31 23')
         # valid = times.select(df=ts, time_key=const.TIME, from_time='17-11-31 00', to_time='17-12-31 23')
@@ -107,13 +107,13 @@ if __name__ == "__main__":
     base_ld = config[const.LD_PM10_]
     config_bj = {
         const.STATIONS: config[const.BJ_STATIONS],
-        const.FEATURES: base_bj + "mlp_features.csv",
+        const.FEATURE: base_bj + "mlp_features.csv",
         const.MODEL: base_bj + "mlp_model.mdl",
         const.LOSS_FUNCTION: const.MEAN_PERCENT
     }
     config_ld = {
         const.STATIONS: config[const.LD_STATIONS],
-        const.FEATURES: base_ld + "mlp_features.csv",
+        const.FEATURE: base_ld + "mlp_features.csv",
         const.MODEL: base_ld + "mlp_model.mdl",
         const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
     }

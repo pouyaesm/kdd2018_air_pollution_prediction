@@ -24,9 +24,9 @@ class PreProcessBJ(PreProcess):
         """
         aq_url = "https://biendata.com/competition/airquality/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
         meo_url = "https://biendata.com/competition/meteorology/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
-        aq_live = pd.read_csv(io.StringIO(requests.get(aq_url).content.decode('utf-8')))
+        aq_live = pd.read_csv(io.StringIO(util.download(aq_url)))
         print('Live aQ has been read, count:', len(aq_live))
-        meo_live = pd.read_csv(io.StringIO(requests.get(meo_url).content.decode('utf-8')))
+        meo_live = pd.read_csv(io.StringIO(util.download(meo_url)))
         print('Live meO has been read, count:', len(meo_live))
 
         # Make live data columns compatible with offline data

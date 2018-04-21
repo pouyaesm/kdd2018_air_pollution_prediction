@@ -43,6 +43,7 @@ tmtagsHistory
 # project config file, data, and outputted models #
 ###################################################
 data
+features
 config.ini
 external_libraries
 models
