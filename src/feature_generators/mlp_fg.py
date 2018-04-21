@@ -22,7 +22,7 @@ class FeatureGenerator:
         self.hour_y = hour_y
 
     def load(self):
-        # load data
+        # load_model data
         self.stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
         ts = pd.read_csv(self.config[const.OBSERVED], sep=";", low_memory=False)
         self.data = reform.group_by_station(ts=ts, stations=self.stations)

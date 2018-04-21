@@ -174,3 +174,9 @@ def nan_gap(values: list):
 
 def row_to_matrix(matrix: np.ndarray, row_split=1):
     return np.reshape(matrix, (matrix.shape[0], row_split, matrix.shape[1] // row_split))
+
+
+def add_columns(df: pd.DataFrame, columns: np.ndarray, name_prefix='c'):
+    for c in range(0, columns.shape[1]):
+        df[name_prefix + str(c)] = pd.Series(data=columns[:, c], index=df.index)
+    return df

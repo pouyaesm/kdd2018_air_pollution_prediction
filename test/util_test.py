@@ -91,3 +91,11 @@ class UtilTest(unittest.TestCase):
             [[4, 5], [6, 7]]]
         )
         np_test.assert_array_equal(expected, three_d)
+
+    @staticmethod
+    def test_add_columns():
+        df = pd.DataFrame(data={'a': [1, 2]}, index=[10, 11])
+        columns = np.array([[3, 4], [5, 6]], dtype=np.int64).transpose()
+        util.add_columns(df, columns, name_prefix='b')
+        expected = pd.DataFrame(data={'a': [1, 2], 'b0': [3, 4], 'b1': [5, 6]}, index=[10, 11])
+        pd_test.assert_frame_equal(left=expected, right=df)

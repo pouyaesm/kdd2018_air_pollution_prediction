@@ -5,7 +5,7 @@ from src.preprocess.preprocess_bj import PreProcessBJ
 
 class PreProcessTest(unittest.TestCase):
 
-    # test load and pre-processing data
+    # test load_model and pre-processing data
     def test_pre_process(self):
         base_dir = "E:\\Projects\\KDD2018\\KDD2018Predict\\test\\data\\"
         config = {

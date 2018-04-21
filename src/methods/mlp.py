@@ -41,7 +41,7 @@ class MLP:
         data.drop(columns=[const.TIME], inplace=True)
 
     def build(self):
-        # load data
+        # load_model data
         # stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
         ts = pd.read_csv(self.config[const.FEATURES], sep=";", low_memory=False)
 
@@ -117,6 +117,6 @@ if __name__ == "__main__":
         const.MODEL: base_ld + "mlp_model.mdl",
         const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
     }
-    # mlp = MLP(config_bj).build().save()
+    # mlp = MLP(config_bj).build().save_features()
     mlp = MLP(config_ld).build().save()
     print("Done!")

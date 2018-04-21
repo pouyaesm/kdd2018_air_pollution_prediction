@@ -3,7 +3,7 @@ import settings
 from src.preprocess.preprocess_bj import PreProcessBJ
 from src.preprocess.preprocess_ld import PreProcessLD
 
-# Fetch and save live grid data of both cities
+# Fetch and save_features live grid data of both cities
 
 config = settings.config[const.DEFAULT]
 

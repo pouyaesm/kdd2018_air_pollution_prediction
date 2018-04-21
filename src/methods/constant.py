@@ -11,7 +11,7 @@ from src.preprocess import reform, times
 # access default configurations
 config = settings.config[const.DEFAULT]
 
-# load data
+# load_model data
 stations = pd.read_csv(config[const.BJ_STATIONS], sep=";", low_memory=False)
 data = pd.read_csv(config[const.BJ_OBSERVED], sep=";", low_memory=False)
 data = times.select(df=data, time_key=const.TIME,

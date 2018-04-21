@@ -23,9 +23,10 @@ class LSTMFG:
         self._test = pd.DataFrame()
         self._station_count = 0
         self._valid_stations = pd.DataFrame()
+        self._features_path = self.config[const.FEATURES] + str(self.input_hours) + '_lstm_features.csv'
 
     def generate(self):
-        # load data
+        # load_model data
         stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
         ts = pd.read_csv(self.config[const.OBSERVED], sep=";", low_memory=False)
         data = reform.group_by_station(ts=ts, stations=stations)
@@ -77,7 +78,7 @@ class LSTMFG:
 
     def next(self, batch_size, time_steps):
         if len(self._train.index) == 0:
-            self.load_for_next()
+            self.load()
         sample = self._train.sample(n=batch_size)
         values = sample.values
         x = util.row_to_matrix(values[:, 2:self.input_hours + 2], row_split=time_steps)
@@ -85,15 +86,17 @@ class LSTMFG:
         return x, y
 
     def test(self, time_steps):
-        x = util.row_to_matrix(self._train.values[:, 2:self.input_hours + 2], row_split=time_steps)
-        y = self._train.values[:, self.input_hours + 2:]
+        if len(self._test.index) == 0:
+            self.load()
+        x = util.row_to_matrix(self._test.values[:, 2:self.input_hours + 2], row_split=time_steps)
+        y = self._test.values[:, self.input_hours + 2:]
         return x, y
 
-    def load_for_next(self):
-        features = pd.read_csv(self.config[const.FEATURES], sep=";", low_memory=False)
-        self._train = times.select(df=features, time_key=const.TIME, from_time='00-01-01 00', to_time='17-12-31 23')
+    def load(self):
+        features = pd.read_csv(self._features_path, sep=";", low_memory=False)
+        self._train = times.select(df=features, time_key=const.TIME, from_time='00-01-01 00', to_time='18-03-31 23')
         # valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
-        self._test = times.select(df=features, time_key=const.TIME, from_time='18-01-01 00', to_time='18-02-02 23')
+        self._test = times.select(df=features, time_key=const.TIME, from_time='18-04-01 00', to_time='18-04-30 23')
 
     def dropna(self):
         self.features = self.features.dropna(axis=0)  # drop rows containing nan values
@@ -103,14 +106,19 @@ class LSTMFG:
         self.features = self.features.sample(n=count)
         return self
 
-    def save(self):
+    def save_features(self):
         """
             Save the extracted features to file
         :return:
         """
-        util.write(self.features, address=self.config[const.FEATURES] +
-                                          str(self.input_hours) + '_lstm_features.csv')
+        util.write(self.features, address=self._features_path)
         print(len(self.features.index), 'feature vectors are written to file')
+
+    def save_test(self, predicted_values):
+        augmented_test = util.add_columns(self._test, columns=predicted_values, name_prefix='f')
+        util.write(augmented_test, address=self.config[const.FEATURES] +
+                                          str(self.input_hours) + '_lstm_test.csv')
+        print(len(augmented_test.index), 'predicted tests are written to file')
 
 
 if __name__ == "__main__":
@@ -131,7 +139,7 @@ if __name__ == "__main__":
         const.POLLUTANT: pollutant
     }
     # fg = LSTMFG(config_bj, input_hours=3)
-    # fg.generate().dropna().sample(140000).save()
+    # fg.generate().dropna().sample(140000).save_features()
     fg = LSTMFG(config_ld, input_hours=3)
-    fg.generate().dropna().save()
+    fg.generate().dropna().save_features()
     print("Done!")

@@ -14,7 +14,7 @@ config = settings.config[const.DEFAULT]
 plt.interactive(False)
 
 # Read cleaned data
-df = pd.read_csv(config[const.CLEAN_DATA], delimiter=';', low_memory=False)
+df = pd.read_csv(config[const.BJ_OBSERVED], delimiter=';', low_memory=False)
 
 # Select unique stations
 stations = df.drop_duplicates(subset=['station_id']).reset_index()
