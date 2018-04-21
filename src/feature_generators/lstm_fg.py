@@ -66,21 +66,28 @@ class LSTMFG:
         sample = self._train.sample(n=batch_size)
         values = sample.values
         x = util.row_to_matrix(values[:, 2:self.input_hours + 2], row_split=time_steps)
-        y = values[:, self.input_hours + 2:]
+        # y = values[:, self.input_hours + 2:]
+        # use reversed of output to make a closer connection
+        # between last values of input and first values of output
+        y = util.reverse(values[:, self.input_hours + 2:], axis=1)
         return x, y
 
     def test(self, time_steps):
         if len(self._test.index) == 0:
             self.load()
         x = util.row_to_matrix(self._test.values[:, 2:self.input_hours + 2], row_split=time_steps)
-        y = self._test.values[:, self.input_hours + 2:]
+        # y = self._test.values[:, self.input_hours + 2:]
+        # use reversed of output to make a closer connection
+        # between last values of input and first values of output
+        y = util.reverse(self._test.values[:, self.input_hours + 2:], axis=1)
         return x, y
 
     def load(self):
         features = pd.read_csv(self._features_path, sep=";", low_memory=False)
-        self._train = times.select(df=features, time_key=const.TIME, from_time='00-01-01 00', to_time='18-03-31 23')
+        self._train = times.select(df=features, time_key=const.TIME, from_time='00-01-01 00', to_time='18-03-29 00')
         # valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
-        self._test = times.select(df=features, time_key=const.TIME, from_time='18-04-01 00', to_time='18-04-30 23')
+        self._test = times.select(df=features, time_key=const.TIME, from_time='18-03-31 00', to_time='18-04-30 23')
+        return self
 
     def dropna(self):
         self.features = self.features.dropna(axis=0)  # drop rows containing nan values

@@ -188,6 +188,16 @@ def rreplace(string, old, new, occurrence):
     return new.join(string.rsplit(old, occurrence))
 
 
+def reverse(matrix: np.ndarray, axis=1):
+    """
+        Reverse a given matrix
+    :param matrix:
+    :param axis: 1 for reverse column, 0 for row
+    :return:
+    """
+    return np.flipud(matrix) if axis == 0 else np.fliplr(matrix)
+
+
 def download(url):
     response = requests.get(url, stream=True)
     total_length = response.headers.get('content-length')

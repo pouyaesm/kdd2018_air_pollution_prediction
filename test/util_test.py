@@ -105,3 +105,12 @@ class UtilTest(unittest.TestCase):
         string = '121212'
         replaced = util.rreplace(string, '1', '2', 2)
         self.assertEqual(first='122222', second=replaced)
+
+    @staticmethod
+    def test_reverse():
+        matrix = np.array([[1, 2], [3, 4]])
+        reversed_row = util.reverse(matrix, axis=0)
+        reversed_column = util.reverse(matrix, axis=1)
+        np_test.assert_array_equal(x=[[2, 1], [4, 3]], y=reversed_column)
+        np_test.assert_array_equal(x=[[3, 4], [1, 2]], y=reversed_row)
+

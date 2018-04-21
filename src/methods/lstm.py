@@ -176,13 +176,13 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': [
-            # 'PM2.5',
-            'PM10',
-            'O3'
+            'PM2.5',
+            # 'PM10',
+            # 'O3'
         ],
         'LD': [
-            'PM2.5',
-            'PM10'
+            # 'PM2.5',
+            # 'PM10'
         ]
     }
     # For low values of pollutants MAE works better than SMAPE!
