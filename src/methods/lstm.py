@@ -73,8 +73,8 @@ class LSTM(Model):
 
         # defining the network
         # lstm_layer = rnn.BasicLSTMCell(num_units, name='BasicLSTMCell')
-        lstm_layer = rnn.LSTMCell(num_units, name='LSTMCell')
-        outputs, _ = tf.nn.dynamic_rnn(cell=lstm_layer, inputs=x_reshaped,
+        rnn_cell = rnn.LSTMCell(num_units, name='LSTMCell')
+        outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=x_reshaped,
                                        time_major=True, parallel_iterations=4, dtype="float32")
 
         #
@@ -93,7 +93,7 @@ class LSTM(Model):
         train_step = tf.train.AdamOptimizer(learning_rate=0.02).minimize(loss_function)
 
         # summaries of interest
-        lstm_kernel, lstm_bias = lstm_layer.variables
+        lstm_kernel, lstm_bias = rnn_cell.variables
         tf.summary.scalar('SMAPE', smape)
         tf.summary.histogram('lstm_kernel', lstm_kernel)
         tf.summary.histogram('lstm_bias', lstm_bias)
