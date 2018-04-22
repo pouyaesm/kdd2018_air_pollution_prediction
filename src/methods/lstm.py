@@ -67,17 +67,17 @@ class LSTM(Model):
         # input label placeholder
         y = tf.placeholder("float", [None, d_output], name='y')
 
-        # processing the input tensor from [batch_size,n_steps,n_input]
-        # to "time_steps" number of [batch_size,n_input] tensors
-        x_reshaped = tf.unstack(x, self.time_steps, 1, name='input_steps')
+        # convert [batch_size, time_steps, n_input] to time_steps list of [batch_size, n_input]
+        # then convert into tensor [time_steps, n_input, batch_size]
+        x_reshaped = tf.stack(tf.unstack(value=x, num=self.time_steps, axis=1, name='input_steps'), axis=0)
 
         # defining the network
         # lstm_layer = rnn.BasicLSTMCell(num_units, name='BasicLSTMCell')
         lstm_layer = rnn.LSTMCell(num_units, name='LSTMCell')
-        outputs, _ = rnn.static_rnn(lstm_layer, x_reshaped, dtype="float32")
+        outputs, _ = tf.nn.dynamic_rnn(cell=lstm_layer, inputs=x_reshaped,
+                                       time_major=True, parallel_iterations=4, dtype="float32")
 
-        # converting last output of dimension [batch_size,num_units]
-        # to [batch_size,n_classes] by out_weight multiplication
+        #
         # prediction = tf.transpose(outputs)[0]  # tf.matmul(outputs[-1], out_weights) + out_bias
         # prediction = tf.matmul(outputs[-1], out_weights) + out_bias
         prediction = tf.matmul(tf.transpose(outputs)[0], out_weights) + out_bias
@@ -90,7 +90,7 @@ class LSTM(Model):
         loss_function = smape if self.config[const.LOSS_FUNCTION] == const.MEAN_PERCENT \
             else tf.reduce_mean(nom)
         # optimization
-        train_step = tf.train.AdamOptimizer(learning_rate=0.025).minimize(loss_function)
+        train_step = tf.train.AdamOptimizer(learning_rate=0.02).minimize(loss_function)
 
         # summaries of interest
         lstm_kernel, lstm_bias = lstm_layer.variables
