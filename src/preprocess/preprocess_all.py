@@ -34,7 +34,7 @@ config_ld = {
 }
 
 append = False
-do_bj = False
+do_bj = True
 do_ld = True
 if do_bj:
     print('Processing beijing..')

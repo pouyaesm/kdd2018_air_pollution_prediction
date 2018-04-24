@@ -64,33 +64,17 @@ class PreProcess:
 
         return self
 
-    def append_grid(self, include_history=False):
+    def _relate_observed_to_grid(self):
         """
-            Load grid offline and live data, append the complementary weather info
-            to observed time series
+            Add grid_id to each row of observed station data
         :return:
         """
-        if len(self.obs.index) == 0 or len(self.stations.index) == 0:
-            raise ValueError("Observed and station data must be prepared first")
-
         # Read grid data by chunk to avoid low memory exception
-        iterator = pd.read_csv(self.config[const.GRID_DATA],
-                               low_memory=False, iterator=True, chunksize=100000)
-        # sample when history is not included
-        grid_ts = pd.concat(iterator, ignore_index=True) \
-            if include_history else iterator.read(nrows=5000)
-        grid_ts.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
-
-        # Append grid live loaded offline
-        grid_live = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
-        grid_ts = grid_ts.append(grid_live, ignore_index=True, verify_integrity=True)
-        grid_ts[const.TIME] = pd.to_datetime(grid_ts[const.TIME], utc=True)
-
-        # Number of rows having missing value
-        print('Grid rows with missing values:', np.count_nonzero(grid_ts[const.WSPD].isna()))
-
+        grid_ts = pd.read_csv(self.config[const.GRID_DATA], low_memory=False,
+                               iterator=True, float_precision='round_trip').read(1000)
+        grid_ts.rename(columns={'stationName': const.GID}, inplace=True)
         # Extract grid ids and locations
-        grids = grid_ts.loc[0:1000, :].groupby(const.GID, as_index=False) \
+        grids = grid_ts.groupby(const.GID, as_index=False) \
             .agg({const.LONG: 'first', const.LAT: 'first'})
 
         # Find closest grid to each station
@@ -102,10 +86,43 @@ class PreProcess:
                 ), axis=1)
             self.stations.loc[i, const.GID] = grids.ix[closest.idxmin(), const.GID]
 
-        # Join observed * station_grid * grid
-        self.obs = self.obs.merge(right=self.stations[[const.ID, const.GID]], on=const.ID) \
-            .merge(right=grid_ts, on=[const.GID, const.TIME], suffixes=['_obs', '_grid'])
-        self.obs = util.merge_columns(self.obs, main='_obs', auxiliary='_grid')
+        # Relate observed data to grid ids
+        self.obs = self.obs.merge(right=self.stations[[const.ID, const.GID]], on=const.ID)
+
+        return self
+
+    def append_grid(self, include_history=False):
+        """
+            Load grid offline and live data, append the complementary weather info
+            to observed time series
+        :return:
+        """
+        if len(self.obs.index) == 0 or len(self.stations.index) == 0:
+            raise ValueError("Observed and station data must be prepared first")
+
+        # Relate stations to closest grid for joining grid data to observed data
+        self._relate_observed_to_grid()
+
+        # Read huge grid data part by part
+        iterator = pd.read_csv(self.config[const.GRID_DATA], iterator=True, low_memory=False,
+                               chunksize=2000000, float_precision='round_trip')
+
+        def merge(grid_chunk):
+            # Join observed * station_grid * grid
+            grid_chunk.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
+            grid_chunk[const.TIME] = pd.to_datetime(grid_chunk[const.TIME], utc=True)
+            self.obs = self.obs.merge(right=grid_chunk, how='left', on=[const.GID, const.TIME],
+                                      suffixes=['_obs', '_grid'])
+            # Merge observed and grid shared columns into one main column
+            self.obs = util.merge_columns(self.obs, main='_obs', auxiliary='_grid')
+
+        for i, chunk in enumerate(iterator):
+            print(' merge grid chunk {c}..'.format(c=i + 1))
+            merge(chunk)
+
+        # Append grid live loaded offline
+        grid_live = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
+        merge(grid_live)
 
         # Drop position and grid_id in observed data
         self.obs.drop(columns=[const.LONG, const.LAT, const.GID], inplace=True)
