@@ -65,7 +65,7 @@ class LSTMFG:
             self.load()
         sample = self._train.sample(n=batch_size)
         values = sample.values
-        x = util.row_to_matrix(values[:, 2:self.input_hours + 2], row_split=time_steps)
+        x = util.row_to_matrix(values[:, 2:self.input_hours + 2], split_count=time_steps)
         # y = values[:, self.input_hours + 2:]
         # use reversed of output to make a closer connection
         # between last values of input and first values of output
@@ -75,7 +75,7 @@ class LSTMFG:
     def test(self, time_steps):
         if len(self._test.index) == 0:
             self.load()
-        x = util.row_to_matrix(self._test.values[:, 2:self.input_hours + 2], row_split=time_steps)
+        x = util.row_to_matrix(self._test.values[:, 2:self.input_hours + 2], split_count=time_steps)
         # y = self._test.values[:, self.input_hours + 2:]
         # use reversed of output to make a closer connection
         # between last values of input and first values of output
