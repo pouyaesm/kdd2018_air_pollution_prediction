@@ -33,10 +33,16 @@ def mlp(x, input_d, output_d):
 
 def lstm(ts_x, time_steps, num_units):
     with tf.name_scope("lstm"):
-        input = tf.unstack(ts_x, time_steps, 1)
-
+        ts_x_reshaped = tf.stack(tf.unstack(value=ts_x, num=time_steps, axis=1, name='input_steps'), axis=0)
         rnn_cell = rnn.BasicLSTMCell(num_units)
-        outputs, _ = rnn.static_rnn(rnn_cell, input, dtype="float32")
+        outputs, last_states = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=ts_x_reshaped,
+                                       time_major=True, parallel_iterations=4, dtype="float32")
+        # outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=last_states, initial_state=last_states,
+        #                   time_major=True, parallel_iterations=4, dtype="float32")
+        helper = tf.contrib.seq2seq.TrainingHelper(inputs=ts_x_reshaped,
+                                                   time_major=False, sequence_length=[time_steps])
+        decoder = tf.contrib.seq2seq.BasicDecoder(cell=rnn_cell, helper=helper, initial_state=last_states)
+        outputs, _ = tf.contrib.seq2seq.dynamic_decode(decoder=decoder, output_time_major=True)
 
     lstm_kernel, lstm_bias = rnn_cell.variables
     tf.summary.histogram('lstm_kernel', lstm_kernel)
@@ -117,8 +123,11 @@ conv_out_d = 8
 
 context = np.random.rand(data_size, cnx_d)
 ts_input = np.random.rand(data_size, ts_input_d)
-label = np.random.rand(data_size, output_d)
 image = np.random.rand(data_size, image_ch * image_d * image_d)
+# set average of context, time series, and image as 3-d output
+label = np.concatenate((image.mean(axis=1, keepdims=True),
+                        context.mean(axis=1,  keepdims=True),
+                        ts_input.mean(axis=1,  keepdims=True)), axis=1)
 
 cnx_test = context[train_size:data_size, :]
 ts_input_test = util.row_to_matrix(ts_input[train_size:data_size, :], split_count=ts_input_d)
