@@ -50,14 +50,16 @@ def group(ts: pd.DataFrame, mode, value=None, time_key='time', agg_op=None):
     return sample
 
 
-def group_from(time: list, value: list, index, step, hours):
+def group_from(time: list, value: list, index, step, hours, whole_group=False):
     """
         Group values according to unit, that are mostly hours * step behind the time(index)
     :param time: time series of data-time objects
     :param value:   time series of values to be grouped
     :param index: index of origin value to start the grouping (backward or forward)
-    :param step: negative index for backward, positive for forward
+    :param step: negative index for backward, positive for forward (0 for current group)
     :param hours: number of hours as a unit to group
+    :param whole_group: if True the grouping exceeds the index after (when step < 0)
+        or before (when step > 0) to calculate the total group average
     :return:
     """
     aggregate = dict()  # sum of values for a time group
@@ -65,21 +67,42 @@ def group_from(time: list, value: list, index, step, hours):
     direction = np.sign(step)  # positive is forward
     max_index = len(time) - 1  # max allowed index
     cur_t = time[index]
+    group_t = round_hour(cur_t, hours)
     round_t = None
-    limit_t = cur_t + direction * timedelta(hours=abs(step) * hours)
-    while (direction > 0 and cur_t <= limit_t) or (direction < 0 and cur_t >= limit_t):
+    if direction > 0:
+        # for groups [3, 6)[6, 9) and group('5') = '3' and step 1, go from '5' to '8'
+        limit_t = group_t + timedelta(hours=(abs(step) + 1) * hours)
+    else:
+        # for groups [3, 6)[6, 9) and group('7') = '6' and step 1, go from '3' to '7'
+        limit_t = group_t - timedelta(hours=abs(step) * hours)
+    # Start from the start of group  that includes 'index' (when step > 0)
+    # Start from the end of group that includes 'index' (when step < 0)
+    if whole_group:
+        round_t = round_hour(cur_t, hours)
+        # keep moving the index until passing the group boundary
+        while round_t == group_t:
+            index = index - direction
+            if index < 0 or index > max_index:
+                break
+            cur_t = time[index]
+            round_t = round_hour(cur_t, hours)
+        # undo the last change in index
+        index = index + direction
+        cur_t = time[index]
+
+    while (direction > 0 and cur_t < limit_t) or (direction < 0 and cur_t >= limit_t):
         # t: rounded time to aggregate values using a dictionary
         round_t = round_hour(cur_t, hours)
         aggregate[round_t] = aggregate[round_t] + value[index] \
             if round_t in aggregate else value[index]
         count[round_t] = count[round_t] + 1 if round_t in count else 1
-        if index == 0 or index == max_index:
-            break
         index = index + direction
+        if index < 0 or index > max_index:
+            break
         cur_t = time[index]
 
-    # remained_steps > 0 when index hits array boundary before "step" entries are filled
-    remained_steps = abs(step) - len(aggregate)
+    # remained_steps > 0 when index hits array boundary before "step + 1" entries are filled
+    remained_steps = abs(step) + 1 - len(aggregate)
     if remained_steps > 0:
         for i in range(0, remained_steps):
             cur_t = cur_t + direction * timedelta(hours=hours)
@@ -93,13 +116,15 @@ def group_from(time: list, value: list, index, step, hours):
     return [value for (key, value) in sorted(aggregate.items())]
 
 
-def running_average(time: list, value: list, hours: int):
+def running_average(time: list, value: list, hours: int, whole_group=False):
     """
         Put average values at each index by aggregating values
         from current time group of duration 'hours' until that value
     :param time: time series of data-time objects
     :param value:  time series of values to be grouped
     :param hours: number of hours of each time group
+    :param whole_group: assign average of whole time group for its members
+        not just the running average until an index
     :return:
     """
     size = len(time)
@@ -110,56 +135,98 @@ def running_average(time: list, value: list, hours: int):
     aggregate = dict()  # sum of values for a time group
     count = dict()  # number of values for a time group
 
-    for index in range(0, size):
-        t_group = round_hour(time[index], hours)  # round time to 'hours' unit
-        aggregate[t_group] = aggregate[t_group] + value[index] \
-            if t_group in aggregate else value[index]
-        count[t_group] = count[t_group] + 1 if t_group in count else 1
-        run_average[index] = aggregate[t_group] / count[t_group]
+    t_group_pre = round_hour(time[0], hours)
+    start_index = 0
+    # index goes one extra step to account for the last group when whole_group = True
+    for index in range(0, size + 1):
+
+        if index < size:
+            t_group = round_hour(time[index], hours)  # round time to 'hours' unit
+
+            aggregate[t_group] = aggregate[t_group] + value[index] \
+                if t_group in aggregate else value[index]
+            count[t_group] = count[t_group] + 1 if t_group in count else 1
+            if not whole_group:
+                # put average of group util index for element in this position
+                run_average[index] = aggregate[t_group] / count[t_group]
+
+        if whole_group and (t_group != t_group_pre or index == size):
+            # put average of whole group for all elements
+            average = aggregate[t_group_pre] / count[t_group_pre]
+            run_average[start_index:index] = [average] * (index - start_index)
+            # collect average of next (coming) group
+            t_group_pre = t_group
+            start_index = index
 
     return run_average
 
 
-def split(time: list, value: list, hours, step, skip=0):
+# def split(time: list, value: list, hours, step, skip=0, whole_group=False):
+#     """
+#         Split and group 'step' number of averaged values 'hours' apart
+#     :param time: time per value (hour apart)
+#     :param value: assumed to have value[step * t - 1] = average[value[step * (t - 1):step * t]
+#     :param hours: group times into 'hours' hours
+#     :param step: number of group times set for each index
+#     :param skip: ignore offset number of first values
+#     :param whole_group: include the aggregated value of
+#     whole time group for each of its members not just until that member
+#     :return:
+#     """
+#     splits = list()  # step group times per index
+#     size = len(time)
+#     if size != len(value):
+#         return -1
+#     # Calculate running average of values
+#     # that resets by entering a new time group of duration 'hours'
+#     run_average = running_average(time=time, value=value,
+#                                   hours=hours, whole_group=whole_group)
+#     # array of last 'step' averages to be set for on-going index
+#     cur_step = 0
+#     step_values = [0] * step
+#     t_group_pre = round_hour(time[0], hours)  # first time group to begin
+#     for index, value in enumerate(run_average):
+#         t_group = round_hour(time[index], hours)
+#         if t_group != t_group_pre:  # entering new time group
+#             t_group_pre = t_group
+#             if cur_step < step - 1:
+#                 cur_step = min(cur_step + 1, step - 1)
+#             else:
+#                 util.shift(step_values)  # shift array toward 0
+#
+#         # Set running average of current time group on ward
+#         if cur_step < step - 1:
+#             step_values[cur_step:] = [value] * (step - cur_step)
+#         else:
+#             step_values[cur_step] = value
+#
+#         if index < skip:
+#             continue  # skip first 'offset' indices
+#         # Set 'step' count averaged values for current index
+#         splits.append(step_values.copy())
+#     return splits
+
+def split(time: list, value: list, hours, step, skip=0, whole_group=False):
     """
         Split and group 'step' number of averaged values 'hours' apart
     :param time: time per value (hour apart)
-    :param value: assumed to have value[step * t - 1] = average[value[step * (t - 1):step * t]
+    :param value: values corresponding to time
     :param hours: group times into 'hours' hours
     :param step: number of group times set for each index
     :param skip: ignore offset number of first values
+    :param whole_group: include the aggregated value of
+    whole time group for each of its members not just until that member
     :return:
     """
     splits = list()  # step group times per index
     size = len(time)
     if size != len(value):
         return -1
-    # Calculate running average of values
-    # that resets by entering new time groups of duration 'hours'
-    run_average = running_average(time=time, value=value, hours=hours)
-    # array of last 'step' averages to be set for on-going
-    cur_step = 0
-    step_values = [0] * step
-    t_group_pre = round_hour(time[0], hours)  # first time group to begin
-    for index, value in enumerate(run_average):
-        t_group = round_hour(time[index], hours)
-        if t_group != t_group_pre:  # entering new time group
-            t_group_pre = t_group
-            if cur_step < step - 1:
-                cur_step = min(cur_step + 1, step - 1)
-            else:
-                util.shift(step_values)  # shift array toward 0
-
-        # Set running average of current time group on ward
-        if cur_step < step - 1:
-            step_values[cur_step:] = [value] * (step - cur_step)
-        else:
-            step_values[cur_step] = value
-
-        if index < skip:
-            continue  # skip including first 'offset' indices
-        # Set 'step' count averaged values for current index
-        splits.append(step_values.copy())
+    for i, v in enumerate(value):
+        if i < skip:
+            continue  # skip first 'offset' indices
+        index_values = group_from(time, value, i, step, hours, whole_group)
+        splits.append(index_values)
     return splits
 
 
