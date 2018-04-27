@@ -363,11 +363,17 @@ def split(time: list, value: list, step, group_hours, region=None, whole_group=F
     # or duplication o first (for backward) [whole/partial] group average as array of step values
     group_time = pre_group_time = round_hour(time[region[0]], group_hours)
     group_index = group_lookup[group_time]
-    if step < 0:
-        step_values = deque([average[group_index]] * abs(step))
+    last_index = group_index + step - direction
+    if step > 0:
+        initial_values = average[group_index:min(last_index + 1, group_size)]
+        if len(initial_values) != abs(step):  # duplicate the last group average to reach 'step' values
+            initial_values += [[average[-1] * (group_size - last_index)]]
     else:
-        last_index = group_index + step - direction
-        step_values = deque(average[group_index:last_index + 1])
+        initial_values = average[max(last_index, 0):group_index + 1]
+        if len(initial_values) != abs(step):  # duplicate the first group average to reach 'step' values
+            initial_values = ([average[0]] * (-last_index)) + initial_values
+
+    step_values = deque(initial_values)
 
     cur_step = 0
     for i in range(region[0], region[1] + 1):
@@ -389,7 +395,8 @@ def split(time: list, value: list, step, group_hours, region=None, whole_group=F
         if not whole_group:
             if cur_step == step or step > 0:
                 step_values[0 if step > 0 else -1] = run_average[i]
-            else:  # this branch is executed only at the beginning of regions for backward (few times)
+            elif group_index == 0:
+                # this branch is executed only for the first group for backward (few times)
                 step_values = deque([run_average[i]] * abs(step))
 
         splits.append(list(step_values))

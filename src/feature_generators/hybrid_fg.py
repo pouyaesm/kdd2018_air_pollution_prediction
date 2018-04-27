@@ -48,7 +48,7 @@ class HybridFG(LSTMFG):
             if s_info[const.PREDICT] != 1: continue
             station_id = s_info[const.ID]
             print(' Features of {sid} ({index} of {len})..'.
-                  format(sid=station_id, index=s_index, len=len(stations)))
+                  format(sid=station_id, index=s_index + 1, len=len(stations)))
             s_data = self.data[station_id]
             s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
             first_x = self.air_group * self.air_steps - 1

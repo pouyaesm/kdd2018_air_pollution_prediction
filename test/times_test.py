@@ -154,6 +154,10 @@ class UtilTest(unittest.TestCase):
         expected = [[2.5, 4.5, 6], [4.5, 6, 6], [4.5, 6, 6], [6, 6, 6]]
         np_test.assert_array_equal(x=expected, y=split)
 
+        split = times.split(time=time, value=value, group_hours=3, step=-3, region=(4, 4), whole_group=True)
+        expected = [[2.5, 4.5, 6]]
+        np_test.assert_array_equal(x=expected, y=split)
+
     # @staticmethod
     # def test_split():
     #     yr = '2018-01-01 '
