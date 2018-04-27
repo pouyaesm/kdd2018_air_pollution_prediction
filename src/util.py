@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import requests
-import sys
 import const
 
 
@@ -215,3 +214,8 @@ def download(url):
             done = int(50 * downloaded / total_length)
             print("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
         return content
+
+
+def one_hot(series: pd.Series, columns):
+    return pd.get_dummies(series, columns=columns).T.reindex(columns).T.fillna(0)
+

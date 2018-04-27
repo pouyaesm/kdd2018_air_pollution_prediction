@@ -114,3 +114,9 @@ class UtilTest(unittest.TestCase):
         np_test.assert_array_equal(x=[[2, 1], [4, 3]], y=reversed_column)
         np_test.assert_array_equal(x=[[3, 4], [1, 2]], y=reversed_row)
 
+    @staticmethod
+    def test_one_hot():
+        columns = ['1', '2', '3', '4']
+        s = pd.Series(data=[1, 2, 4])
+        one_hot = util.one_hot(series=s, columns=columns)
+        np_test.assert_array_equal(x=[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]], y=one_hot)

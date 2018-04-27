@@ -158,24 +158,9 @@ class UtilTest(unittest.TestCase):
         expected = [[2.5, 4.5, 6]]
         np_test.assert_array_equal(x=expected, y=split)
 
-    # @staticmethod
-    # def test_split():
-    #     yr = '2018-01-01 '
-    #     time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '18'], utc=True).tolist()
-    #     value = [2, 3, 4, 5, 6]
-    #     split = times.split(time=time, value=value, hours=3, step=3, skip=2)
-    #     # time groups: 12:00, 15:00, and 18:00
-    #     # first two [2, 2, 2] and [2.5, 2.5, 2.5] split skipped
-    #     expected = [[2.5, 4, 4], [2.5, 4.5, 4.5], [2.5, 4.5, 6]]
-    #     np_test.assert_array_equal(x=expected, y=split)
-    #
-    #     # first two [2, 2, 2] and [2, 2, 3] split skipped
-    #     split = times.split(time=time, value=value, hours=1, step=3, skip=2)
-    #     expected = [[2, 3, 4], [3, 4, 5], [4, 5, 6]]
-    #     np_test.assert_array_equal(x=expected, y=split)
-    #
-    #     # first two [2.5, 2.5, 2.5] splits skipped
-    #     # total group average is considered for each member regardless of index
-    #     split = times.split(time=time, value=value, hours=3, step=3, skip=2, whole_group=True)
-    #     expected = [[2.5, 4.5, 4.5], [2.5, 4.5, 4.5], [2.5, 4.5, 6]]
-    #     np_test.assert_array_equal(x=expected, y=split)
+    @staticmethod
+    def test_one_hot():
+        columns = ['01', '02', '03', '04']
+        s = pd.to_datetime(pd.Series(data=[1, 2, 4]), utc=True, format='%H')
+        one_hot = times.one_hot(times=s, columns=columns, time_format='%H')
+        np_test.assert_array_equal(x=[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]], y=one_hot)

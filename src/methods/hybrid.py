@@ -10,6 +10,7 @@ from src import util
 from tensorflow.contrib import rnn
 from src.methods.lstm import LSTM
 from src.methods.neural_net import NN
+from src.feature_generators.hybrid_fg import HybridFG
 
 
 class Hybrid(LSTM):
@@ -17,28 +18,43 @@ class Hybrid(LSTM):
     def __init__(self, cfg):
         self.time_steps = cfg[const.TIME_STEPS]
         super(Hybrid, self).__init__(cfg, self.time_steps)
+        self.fg = self.fg = HybridFG({
+            const.FEATURE_DIR: self.config[const.FEATURE_DIR],
+            const.FEATURE: self.config[const.FEATURE],
+            const.STATIONS: self.config[const.STATIONS],
+            const.POLLUTANT: self.config[const.POLLUTANT],
+            const.CHUNK_COUNT: self.config[const.CHUNK_COUNT],
+            const.TEST_FROM: self.config[const.TEST_FROM],
+            const.TEST_TO: self.config[const.TEST_TO],
+        }, time_steps=self.time_steps)
         # Path to save and restore the model
         self._model_path = self.config[const.MODEL_DIR] + \
                            self.config[const.FEATURE] + str(self.time_steps) + '_rcnn.mdl'
+        # Structure parameters
+        self.has_context = False
+        self.has_meo = True
         self.context_count = 1
 
+
     @staticmethod
-    def lstm(ts_x, time_steps, num_units):
-        with tf.name_scope("lstm"):
+    def lstm(ts_x, time_steps, num_units, scope='lstm'):
+        with tf.name_scope(scope):
             ts_x_reshaped = tf.stack(tf.unstack(value=ts_x, num=time_steps, axis=1, name='input_steps'), axis=0)
-            rnn_cell = rnn.BasicLSTMCell(num_units)
+            rnn_cell = rnn.BasicLSTMCell(num_units, name=scope + '_cell')
+            # rnn_cell = rnn.LSTMCell(num_units, name=scope + '_cell')
             outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=ts_x_reshaped,
                                                      time_major=True, parallel_iterations=4, dtype="float32")
+            lstm_kernel, lstm_bias = rnn_cell.variables
+            tf.summary.histogram(scope + '_kernel', lstm_kernel)
+            tf.summary.histogram(scope + '_bias', lstm_bias)
 
-        lstm_kernel, lstm_bias = rnn_cell.variables
-        tf.summary.histogram('lstm_kernel', lstm_kernel)
-        tf.summary.histogram('lstm_bias', lstm_bias)
-        return outputs[-1]
+        return tf.transpose(outputs)[0]
+        # return outputs[-1]
 
     @staticmethod
-    def mlp(x, input_d, output_d):
-        with tf.name_scope("mlp"):
-            hidden_d = int(input_d / 2)
+    def mlp(x, input_d, output_d, scope='mlp'):
+        with tf.name_scope(scope):
+            hidden_d = input_d  # int(input_d / 2)
             # hidden layers
             layer = tf.nn.relu(NN.linear(input_d, hidden_d, 'hid1', input=x))
             layer = NN.batch_norm(hidden_d, hidden_d, input=layer)
@@ -47,22 +63,37 @@ class Hybrid(LSTM):
         return layer
 
     def build(self):
-        num_units = 1
-        d_output = 48
-        d_input = 1
-        lstm_out_d = 24
-
-        cnx_x = tf.placeholder(tf.float32, (None, self.context_count), name='cnx_x')
-        ts_x = tf.placeholder(tf.float32, (None, self.time_steps, 1), name='ts_x')
+        meo_out_d = 6
+        air_out_d = 18
+        meo_in_d = len(self.fg.meo_keys)  # number of features related to meteorology
+        air_in_d = len(self.fg.air_keys)  # number of features related to air quality
+        cnx_x = tf.placeholder(tf.float32, (None, self.fg.get_context_count()), name='cnx_x')
+        ts_meo_x = tf.placeholder(tf.float32, (None, self.fg.meo_steps, meo_in_d), name='ts_meo_x')
+        ts_air_x = tf.placeholder(tf.float32, (None, self.fg.air_steps, air_in_d), name='ts_air_x')
         y = tf.placeholder(tf.float32, (None, 48), name='ts_y')
 
-        lstm_out = Hybrid.lstm(ts_x, self.time_steps, lstm_out_d)
-        mlp_x = tf.concat([lstm_out, cnx_x], axis=1, name='mlp_x')
-        prediction = Hybrid.mlp(mlp_x, lstm_out_d + self.context_count, 48)
+        # meo_out = Hybrid.lstm(ts_meo_x, self.fg.meo_steps, meo_out_d, scope='lstm_meo_')
+        # air_out = Hybrid.lstm(ts_air_x, self.fg.air_steps, air_out_d, scope='lstm_air_')
+        # mlp_x = tf.concat([meo_out, air_out, cnx_x], axis=1, name='mlp_x')
+        # prediction = Hybrid.mlp(mlp_x, meo_out_d + air_out_d + self.fg.get_context_count(), 48)
+
+        meo_out = Hybrid.lstm(ts_meo_x, self.fg.meo_steps, 1, scope='lstm_meo_')
+        air_out = Hybrid.lstm(ts_air_x, self.fg.air_steps, 1, scope='lstm_air_')
+
+        mlp_input = [air_out]
+        mlp_d = self.fg.air_steps
+        if self.has_context:
+            mlp_input.append(cnx_x)
+            mlp_d += self.fg.get_context_count()
+        if self.has_meo:
+            mlp_input.append(meo_out)
+            mlp_d += self.fg.meo_steps
+        mlp_x = tf.concat(mlp_input, axis=1, name='mlp_x')
+        prediction = Hybrid.mlp(mlp_x, mlp_d, 48)
 
         # loss_function
         nom = tf.abs(tf.subtract(x=prediction, y=y))
-        denom = tf.divide(x=prediction + y, y=2)
+        denom = tf.divide(x=tf.abs(prediction) + y, y=2)
         smape = tf.reduce_mean(tf.divide(x=nom, y=denom))
         # mean absolute error or SMAPE for mean percent error
         loss_function = smape if self.config[const.LOSS_FUNCTION] == const.MEAN_PERCENT \
@@ -75,7 +106,8 @@ class Hybrid(LSTM):
 
         return {
             'cnx': cnx_x,
-            'ts': ts_x,
+            'meo_ts': ts_meo_x,
+            'air_ts': ts_air_x,
             'y': y,
             'train_step': train_step,
             'loss': loss_function,
@@ -91,28 +123,37 @@ class Hybrid(LSTM):
         model = self.build()
 
         # summary writer
-        # summary_writer = tf.summary.FileWriter('logs/lstm/fast1')
-        # summary_writer.add_graph(self.session.graph)
+        summary_writer = tf.summary.FileWriter('logs/hybrid/run1')
+        summary_writer.add_graph(self.session.graph)
+
+        def run(nodes, model, c, m, a, l):
+            return self.session.run(nodes, feed_dict={model['cnx']: c, model['meo_ts']: m,
+                                        model['air_ts']: a, model['y']: l})
 
         # initialize session variables
         self.session.run(tf.global_variables_initializer())
 
         for i in range(0, epochs):
-            batch_x, batch_y = self.fg.next(batch_size=batch_size, time_steps=self.time_steps)
-            self.session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
-            # summary, _ = sess.run([summary_all, train_step], feed_dict={x: batch_x, y: batch_y})
-            # summary_writer.add_summary(summary, i)
+            context, meo_ts, air_ts, label = self.fg.next(batch_size=batch_size,
+                                                          progress=i / epochs, rotate=2)
+            # run(model['train_step'], model=model, c=context, m=meo_ts, a=air_ts, l=label)
+            summary, _ = run([model['summary'], model['train_step']],
+                                  model=model, c=context, m=meo_ts, a=air_ts, l=label)
+            summary_writer.add_summary(summary, i)
             if i % 10 == 0:
-                smp, los = self.session.run([model['smape'], model['loss']],
-                                    feed_dict={model['x']: batch_x, model['y']: batch_y})
-                print(i, " Loss ", los, ", SMAPE ", smp)
+                train_smp, train_loss = run([model['smape'], model['loss']], model=model,
+                               c=context, m=meo_ts, a=air_ts, l=label)
+                context, meo_ts, air_ts, label = self.fg.holdout(key=const.TEST)
+                test_smp = run(model['smape'], model=model,
+                               c=context, m=meo_ts, a=air_ts, l=label)
+                print(i, " Loss ", train_loss, ", SMAPE tr", train_smp, " vs ", test_smp, "tst")
 
         self.model = model  # make model accessible to other methods
 
         # Report SMAPE error on test set
-        test_data, test_label = self.fg.test(time_steps=self.time_steps)
-        print("Testing SMAPE:", self.session.run(model['smape'], feed_dict=
-        {model['x']: test_data, model['y']: test_label}))
+        context, meo_ts, air_ts, label = self.fg.holdout(key=const.TEST)
+        print("Testing SMAPE:", run(model['smape'], model=model,
+                                    c=context, m=meo_ts, a=air_ts, l=label))
 
         return self
 
@@ -150,10 +191,15 @@ if __name__ == "__main__":
             cfg = {
                 const.MODEL_DIR: config[const.MODEL_DIR],
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
+                const.POLLUTANT: pollutant,
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
-                const.LOSS_FUNCTION: const.MEAN_ABSOLUTE,
-                const.EPOCHS: 1000,
-                const.BATCH_SIZE: 500,
+                const.STATIONS: config[getattr(const, city + '_STATIONS')],
+                const.TEST_FROM: '18-04-01 23',
+                const.TEST_TO: '18-04-30 23',
+                const.LOSS_FUNCTION: const.MEAN_PERCENT,
+                const.CHUNK_COUNT: 4,
+                const.EPOCHS: 3000,
+                const.BATCH_SIZE: 1000,
                 const.TIME_STEPS: 48
             }
             hybrid = Hybrid(cfg).train().save_model()

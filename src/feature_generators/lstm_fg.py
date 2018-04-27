@@ -43,11 +43,12 @@ class LSTMFG:
             station_id = s_info[const.ID]
             s_data = data[station_id]
             s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
-            first_x_end = self.time_steps - 1
+            first_x = self.time_steps - 1
+            last_x = len(s_data) - 1 - 48
             sid = [station_id] * (len(s_time) - self.time_steps)
             s_value = s_data[self.config[const.POLLUTANT]].tolist()
             t, value = reform.split(time=s_time, value=s_value, step=self.time_steps)
-            label = times.split(time=s_time, value=s_value, group_hours=1, step=48, skip=first_x_end + 48)
+            label = times.split(time=s_time, value=s_value, group_hours=1, step=48, region=(first_x + 1, last_x + 1))
             # values to be predicted
             feature_set = [[s] + [t] + v + l for s, t, v, l in zip(sid, t, value, label)]
             features.extend(feature_set)

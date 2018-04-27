@@ -47,7 +47,8 @@ class FeatureGenerator:
             s_data = self.data[station_id]
             if s_data[const.TEMP].isnull().values.any(): continue
             s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
-            first_x_end = self.hour_x - 1
+            first_x = self.hour_x - 1
+            last_x = len(s_time) - self.hour_y - 1
             # temperature of last 7 days every 3 hours
             # temp_h6_28 = times.split(time=s_time, value=s_data[const.TEMP].tolist(),
             #                          hours=6, step=28, skip=first_x_end)
@@ -61,7 +62,7 @@ class FeatureGenerator:
             # v_h6_28 = times.split(time=s_time, value=s_value, hours=6, step=28, skip=first_x_end)
             # next hour_y values to be predicted
             label = times.split(time=s_time, value=s_value, group_hours=1,
-                                step=self.hour_y, skip=first_x_end + self.hour_y)
+                                step=self.hour_y, region=(first_x + 1, last_x + 1))
             sid = [station_id] * (len(s_time) - self.hour_x)
             feature_set = [[s]+[t]+v+l for s, t, v, l
                            in zip(sid, t, value, label)]

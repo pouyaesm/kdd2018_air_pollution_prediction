@@ -15,7 +15,14 @@ POLLUTANT = 'pollutant'
 LOSS_FUNCTION = 'loss'
 EPOCHS = 'epochs'
 BATCH_SIZE = 'batch_size'
+CHUNK_COUNT = 'chunk_count'
+SAMPLE_COUNT = 'sample_count'
 TIME_STEPS = 'time_steps'
+TEST_FROM = 'test_from'
+TEST_TO = 'test_to'
+TRAIN = 0
+TEST = 1
+VALID = 2
 IS_TEST = 'is_test'
 
 MEAN_ABSOLUTE = 'mean_absolute_error'
@@ -111,7 +118,8 @@ def func():
     global FEATURE, FEATURE_DIR, BJ_PM25_, BJ_PM10_, BJ_O3_
     global LD_FEATURES, LD_PM25_, LD_PM10_, LD_O3_
     global POLLUTANT
-    global EPOCHS, BATCH_SIZE, TIME_STEPS, LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
+    global EPOCHS, BATCH_SIZE, TIME_STEPS, CHUNK_COUNT, LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
+    global TRAIN, TEST, VALID
     global MODEL, MODEL_DIR
     global GRIDS, GRID_DATA, GRID_LIVE, GRID_URL, BJ_GRIDS, BJ_GRID_DATA, BJ_GRID_URL
     global LD_GRIDS, LD_GRID_DATA, LD_GRID_URL, BJ_GRID_LIVE, LD_GRID_LIVE
