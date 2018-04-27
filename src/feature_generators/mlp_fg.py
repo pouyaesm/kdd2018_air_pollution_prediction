@@ -60,7 +60,7 @@ class FeatureGenerator:
             t, value = reform.split(time=s_time, value=s_value, step=self.hour_x)
             # v_h6_28 = times.split(time=s_time, value=s_value, hours=6, step=28, skip=first_x_end)
             # next hour_y values to be predicted
-            label = times.split(time=s_time, value=s_value, hours=1,
+            label = times.split(time=s_time, value=s_value, group_hours=1,
                                 step=self.hour_y, skip=first_x_end + self.hour_y)
             sid = [station_id] * (len(s_time) - self.hour_x)
             feature_set = [[s]+[t]+v+l for s, t, v, l

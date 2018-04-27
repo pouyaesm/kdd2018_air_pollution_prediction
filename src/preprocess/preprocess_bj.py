@@ -85,6 +85,13 @@ class PreProcessBJ(PreProcess):
         meo.loc[meo['wind_direction'] > 360, 'wind_direction'] = np.nan  # value = [0, 360] degree
         meo.loc[meo['humidity'] > 100, 'humidity'] = np.nan  # value = [0, 100] percent
 
+        # Change negative reports of pollutants to NaN
+        pollutants = [const.PM25, const.PM10, const.O3]
+        for pollutant in pollutants:
+            negatives = aq[pollutant] < 0
+            aq.loc[negatives, pollutant] = np.nan
+            print('Negative {p} reports: {c}'.format(p=pollutant, c=np.sum(negatives)))
+
         # Merge air quality and weather data based on stationId-timestamp
         self.obs = aq.merge(meo, how='outer', on=[const.ID, const.TIME], suffixes=['_aq', '_meo'])
 

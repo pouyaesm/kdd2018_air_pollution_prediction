@@ -26,7 +26,7 @@ class LSTM(Model):
         self.fg = self.fg = LSTMFG({
                 const.FEATURE_DIR: self.config[const.FEATURE_DIR],
                 const.FEATURE: self.config[const.FEATURE],
-        }, input_hours=self.time_steps)
+        }, time_steps=self.time_steps)
         # Path to save and restore the model
         self._model_path = self.config[const.MODEL_DIR] + \
                            self.config[const.FEATURE] + str(self.time_steps) + '_lstm.mdl'

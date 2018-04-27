@@ -7,71 +7,58 @@ import const
 import settings
 import tensorflow as tf
 from src import util
-from src.feature_generators.lstm_fg import LSTMFG
-from keras.models import Sequential
 from tensorflow.contrib import rnn
-from src.methods.model import Model
 from src.methods.lstm import LSTM
+from src.methods.neural_net import NN
 
 
-class RCNN(LSTM):
+class Hybrid(LSTM):
 
-    def __init__(self, cfg, time_steps):
-        super(RCNN, self).__init__(cfg, time_steps)
+    def __init__(self, cfg):
+        self.time_steps = cfg[const.TIME_STEPS]
+        super(Hybrid, self).__init__(cfg, self.time_steps)
         # Path to save and restore the model
         self._model_path = self.config[const.MODEL_DIR] + \
                            self.config[const.FEATURE] + str(self.time_steps) + '_rcnn.mdl'
+        self.context_count = 1
 
     @staticmethod
-    def replace_time(data: pd.DataFrame):
-        """
-            Replace the complete datetime with its (day of week, hour)
-        :param data:
-        :return:
-        """
-        date = pd.to_datetime(data[const.TIME], format=const.T_FORMAT, utc=True)
-        data.insert(loc=0, column='hour', value=date.dt.hour)
-        data.insert(loc=0, column='dayofweek', value=(date.dt.dayofweek + 1) % 7)  # 0: monday -> 0: sunday
-        data.drop(columns=[const.TIME], inplace=True)
+    def lstm(ts_x, time_steps, num_units):
+        with tf.name_scope("lstm"):
+            ts_x_reshaped = tf.stack(tf.unstack(value=ts_x, num=time_steps, axis=1, name='input_steps'), axis=0)
+            rnn_cell = rnn.BasicLSTMCell(num_units)
+            outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=ts_x_reshaped,
+                                                     time_major=True, parallel_iterations=4, dtype="float32")
+
+        lstm_kernel, lstm_bias = rnn_cell.variables
+        tf.summary.histogram('lstm_kernel', lstm_kernel)
+        tf.summary.histogram('lstm_bias', lstm_bias)
+        return outputs[-1]
 
     @staticmethod
-    def drop_time_location(data: pd.DataFrame):
-        """
-        :param data:
-        :return:
-        """
-        data.drop(columns=[const.LONG], inplace=True)
-        data.drop(columns=[const.LAT], inplace=True)
-        data.drop(columns=[const.TIME], inplace=True)
+    def mlp(x, input_d, output_d):
+        with tf.name_scope("mlp"):
+            hidden_d = int(input_d / 2)
+            # hidden layers
+            layer = tf.nn.relu(NN.linear(input_d, hidden_d, 'hid1', input=x))
+            layer = NN.batch_norm(hidden_d, hidden_d, input=layer)
+            # output layer
+            layer = NN.linear(hidden_d, output_d, 'out', input=layer)
+        return layer
 
     def build(self):
         num_units = 1
         d_output = 48
         d_input = 1
-        # weights and biases of appropriate shape to accomplish above task
-        out_weights = tf.Variable(tf.random_normal([self.time_steps, d_output]), name='out_weights')
-        out_bias = tf.Variable(tf.random_normal([d_output]), name='out_bias')
+        lstm_out_d = 24
 
-        # defining placeholders
-        # input image placeholder
-        x = tf.placeholder("float", [None, self.time_steps, d_input], name='x')
-        # input label placeholder
-        y = tf.placeholder("float", [None, d_output], name='y')
+        cnx_x = tf.placeholder(tf.float32, (None, self.context_count), name='cnx_x')
+        ts_x = tf.placeholder(tf.float32, (None, self.time_steps, 1), name='ts_x')
+        y = tf.placeholder(tf.float32, (None, 48), name='ts_y')
 
-        # convert [batch_size, time_steps, n_input] to time_steps list of [batch_size, n_input]
-        # then convert into tensor [time_steps, n_input, batch_size]
-        x_reshaped = tf.stack(tf.unstack(value=x, num=self.time_steps, axis=1, name='input_steps'), axis=0)
-
-        # defining the network
-        # lstm_layer = rnn.BasicLSTMCell(num_units, name='BasicLSTMCell')
-        rnn_cell = rnn.LSTMCell(num_units, name='LSTMCell')
-        outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=x_reshaped,
-                                       time_major=True, parallel_iterations=4, dtype="float32")
-
-        #
-        # prediction = tf.transpose(outputs)[0]  # tf.matmul(outputs[-1], out_weights) + out_bias
-        # prediction = tf.matmul(outputs[-1], out_weights) + out_bias
-        prediction = tf.matmul(tf.transpose(outputs)[0], out_weights) + out_bias
+        lstm_out = Hybrid.lstm(ts_x, self.time_steps, lstm_out_d)
+        mlp_x = tf.concat([lstm_out, cnx_x], axis=1, name='mlp_x')
+        prediction = Hybrid.mlp(mlp_x, lstm_out_d + self.context_count, 48)
 
         # loss_function
         nom = tf.abs(tf.subtract(x=prediction, y=y))
@@ -83,19 +70,12 @@ class RCNN(LSTM):
         # optimization
         train_step = tf.train.AdamOptimizer(learning_rate=0.02).minimize(loss_function)
 
-        # summaries of interest
-        lstm_kernel, lstm_bias = rnn_cell.variables
-        tf.summary.scalar('SMAPE', smape)
-        tf.summary.histogram('lstm_kernel', lstm_kernel)
-        tf.summary.histogram('lstm_bias', lstm_bias)
-        tf.summary.histogram('output_weights', out_weights)
-        tf.summary.histogram('output_bias', out_bias)
-
         # merge all summaries
         summary_all = tf.summary.merge_all()
 
         return {
-            'x': x,
+            'cnx': cnx_x,
+            'ts': ts_x,
             'y': y,
             'train_step': train_step,
             'loss': loss_function,
@@ -105,18 +85,19 @@ class RCNN(LSTM):
         }
 
     def train(self):
-        batch_size = 1000
+        batch_size = self.config[const.BATCH_SIZE]
+        epochs = self.config[const.EPOCHS]
 
         model = self.build()
 
         # summary writer
-        summary_writer = tf.summary.FileWriter('logs/lstm/fast1')
-        summary_writer.add_graph(self.session.graph)
+        # summary_writer = tf.summary.FileWriter('logs/lstm/fast1')
+        # summary_writer.add_graph(self.session.graph)
 
         # initialize session variables
         self.session.run(tf.global_variables_initializer())
 
-        for i in range(0, 3500):
+        for i in range(0, epochs):
             batch_x, batch_y = self.fg.next(batch_size=batch_size, time_steps=self.time_steps)
             self.session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
             # summary, _ = sess.run([summary_all, train_step], feed_dict={x: batch_x, y: batch_y})
@@ -144,23 +125,8 @@ class RCNN(LSTM):
         self.fg.save_test(predicted_label)
         return self
 
-    def evaluate(self, actual, forecast):
-        actual_array = actual.reshape(actual.size)
-        forecast_array = forecast.reshape(forecast.size)
-        return util.SMAPE(forecast=forecast_array, actual=actual_array)
-
     def predict(self, x):
         return self.session.run(self.model['predictor'], feed_dict={self.model['x']: x})
-
-    def load_model(self):
-        self.model = self.build()
-        tf.train.Saver().restore(sess=self.session, save_path=self._model_path)
-        return self
-
-    def save_model(self):
-        save_path = tf.train.Saver().save(sess=self.session, save_path=self._model_path)
-        print("Model saved in path: %s" % save_path)
-        return self
 
 
 if __name__ == "__main__":
@@ -185,7 +151,10 @@ if __name__ == "__main__":
                 const.MODEL_DIR: config[const.MODEL_DIR],
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
-                const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
+                const.LOSS_FUNCTION: const.MEAN_ABSOLUTE,
+                const.EPOCHS: 1000,
+                const.BATCH_SIZE: 500,
+                const.TIME_STEPS: 48
             }
-            lstm = LSTM(cfg, time_steps=48).train().save_model()
+            hybrid = Hybrid(cfg).train().save_model()
             print(city, pollutant, "done!")

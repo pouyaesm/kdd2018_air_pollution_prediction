@@ -5,6 +5,7 @@ import requests
 import pandas as pd
 from src import util
 from src.preprocess.preprocess import PreProcess
+import numpy as np
 
 
 class PreProcessLD(PreProcess):
@@ -65,8 +66,15 @@ class PreProcessLD(PreProcess):
         # Convert datetime strings to objects
         aq[const.TIME] = pd.to_datetime(aq[const.TIME], utc=True)
 
+        # Change negative reports of pollutants to NaN
+        pollutants = [const.PM25, const.PM10]
+        for pollutant in pollutants:
+            negatives = aq[pollutant] < 0
+            aq.loc[negatives, pollutant] = np.nan
+            print('Negative {p} reports: {c}'.format(p=pollutant, c=np.sum(negatives)))
+
         # Re-arrange columns order for better readability
-        self.obs = aq[[const.ID, const.TIME, 'PM2.5', 'PM10', 'NO2']]
+        self.obs = aq[[const.ID, const.TIME, const.PM25, const.PM10, 'NO2']]
 
         # Build and clean station data
         aq_stations.drop(columns=['api_data', 'historical_data', 'SiteName'], inplace=True)

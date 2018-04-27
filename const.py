@@ -13,6 +13,9 @@ FEATURE = 'FEATURE'
 FEATURE_DIR = 'FEATURE_DIR'
 POLLUTANT = 'pollutant'
 LOSS_FUNCTION = 'loss'
+EPOCHS = 'epochs'
+BATCH_SIZE = 'batch_size'
+TIME_STEPS = 'time_steps'
 IS_TEST = 'is_test'
 
 MEAN_ABSOLUTE = 'mean_absolute_error'
@@ -66,6 +69,9 @@ ID = 'station_id'
 GID = 'grid_id'
 TIME = 'utc_time'
 PREDICT = 'predict'
+PM25 = 'PM2.5'
+PM10 = 'PM10'
+O3 = 'O3'
 LONG = 'longitude'
 LAT = 'latitude'
 TEMP = 'temperature'
@@ -100,12 +106,12 @@ def func():
     global LD_OBSERVED_MISS
     global LD_STATIONS
     global LD_READ_LIVE
-    global ID, GID, TIME, PREDICT, LONG, LAT, TEMP, PRES, HUM, WSPD, WDIR, S_TYPE
+    global ID, GID, TIME, PREDICT, PM25, PM10, O3, LONG, LAT, TEMP, PRES, HUM, WSPD, WDIR, S_TYPE
     global T_FORMAT
     global FEATURE, FEATURE_DIR, BJ_PM25_, BJ_PM10_, BJ_O3_
     global LD_FEATURES, LD_PM25_, LD_PM10_, LD_O3_
     global POLLUTANT
-    global LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
+    global EPOCHS, BATCH_SIZE, TIME_STEPS, LOSS_FUNCTION, MEAN_ABSOLUTE, MEAN_PERCENT
     global MODEL, MODEL_DIR
     global GRIDS, GRID_DATA, GRID_LIVE, GRID_URL, BJ_GRIDS, BJ_GRID_DATA, BJ_GRID_URL
     global LD_GRIDS, LD_GRID_DATA, LD_GRID_URL, BJ_GRID_LIVE, LD_GRID_LIVE

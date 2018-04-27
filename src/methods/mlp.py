@@ -8,7 +8,7 @@ import settings
 import tensorflow as tf
 from src import util
 from src.preprocess import times
-from src.methods.neural_net import NeuralNet
+from src.methods.neural_net import NN
 from keras.models import Sequential
 
 
@@ -74,9 +74,9 @@ class MLP:
         x_test = test.iloc[:, x]
         y_test = test.iloc[:, y]
 
-        self.model = NeuralNet.mlp(x_train=x_train, y_train=y_train,
-                                   x_valid=x_valid, y_valid=y_valid,
-                                   loss=self.config[const.LOSS_FUNCTION])
+        self.model = NN.keras_mlp(x_train=x_train, y_train=y_train,
+                                  x_valid=x_valid, y_valid=y_valid,
+                                  loss=self.config[const.LOSS_FUNCTION])
 
         y_predict = self.predict(x_test)
         print('SMAPE:', MLP.evaluate(actual=y_test, forecast=y_predict))
@@ -117,6 +117,6 @@ if __name__ == "__main__":
         const.MODEL: base_ld + "mlp_model.mdl",
         const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
     }
-    # mlp = MLP(config_bj).build().save_features()
+    # keras_mlp = MLP(config_bj).build().save_features()
     mlp = MLP(config_ld).build().save()
     print("Done!")

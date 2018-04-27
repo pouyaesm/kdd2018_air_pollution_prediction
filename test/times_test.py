@@ -63,6 +63,20 @@ class UtilTest(unittest.TestCase):
         expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
         pd_test.assert_frame_equal(filtered, expected)
 
+    def test_group_at(self):
+        # test grouping values backward or forward from a given value and given hours unit
+        yr = '2018-01-01 '
+        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        value = [2, 2, 3, 4]
+        # expected groups: 12:00, 15:00
+        forward_average = times.group_at(time, value, index=2, direction=1, group_hours=3)
+        self.assertEqual(first=3.5, second=forward_average)
+        backward_average = times.group_at(time, value, index=2, direction=-1, group_hours=3)
+        self.assertEqual(first=2.5, second=backward_average)
+        single_average = times.group_at(time, value, index=0, direction=-1, group_hours=3)
+        self.assertEqual(first=2, second=single_average)
+
+
     @staticmethod
     def test_group_from():
         # test grouping values backward or forward from a given value and given hours unit
@@ -71,18 +85,18 @@ class UtilTest(unittest.TestCase):
         value = [2, 2, 3, 4, 5]
         # expected to group (2, 2, 3) into 9:00, 12:00 and 15:00
         # where 9:00 is expected to be the repetition of 12:00
-        grouped_back = times.group_from(time, value, index=2, step=-2, hours=3)
+        grouped_back = times.group_from(time, value, index=2, step=-3, group_hours=3)
         np_test.assert_array_equal(grouped_back, [2, 2, 2.5])
         # expected to group (3, 4) forward into 15:00, and (5) into 18:00
-        grouped_forward = times.group_from(time, value, index=2, step=1, hours=3)
+        grouped_forward = times.group_from(time, value, index=2, step=2, group_hours=3)
         np_test.assert_array_equal(grouped_forward, [3.5, 5])
         # redo the test including the group boundaries
         # group boundary of 16:00 is 17:00 for backward grouping
-        boundary_grouped_back = times.group_from(time, value, index=2, step=-2, hours=3,
+        boundary_grouped_back = times.group_from(time, value, index=2, step=-3, group_hours=3,
                                                  whole_group=True)
         np_test.assert_array_equal(boundary_grouped_back, [2, 2, 3])
         # group boundary of 16:00 is [15:00, 17:00) for forward grouping
-        boundary_grouped_back = times.group_from(time, value, index=2, step=2, hours=3,
+        boundary_grouped_back = times.group_from(time, value, index=2, step=3, group_hours=3,
                                                  whole_group=True)
         np_test.assert_array_equal(boundary_grouped_back, [3, 5, 5])
 
@@ -94,27 +108,49 @@ class UtilTest(unittest.TestCase):
         time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
         value = [2, 3, 4, 5]
         # expected to forward-average values into 12:00 and 15:00 (unit: 3 hours)
-        averaged = times.running_average(time, value, hours=3)
-        np_test.assert_array_equal(x=[2, 3, 3.5, 4], y=averaged)
+        forward_averaged = times.running_average(time=time, value=value, group_hours=3)
+        np_test.assert_array_equal(x=[2, 3, 3.5, 4], y=forward_averaged)
+        # expected to backward-average
+        backward_averaged = times.running_average(time=time, value=value, group_hours=3, direction=-1)
+        np_test.assert_array_equal(x=[2, 4, 4.5, 5], y=backward_averaged)
         # put whole group average for each member
-        whole_averaged = times.running_average(time, value, hours=3, whole_group=True)
+        whole_averaged = times.running_average(time=time, value=value, group_hours=3, whole_group=True)
         np_test.assert_array_equal(x=[2, 4, 4, 4], y=whole_averaged)
+
+    def test_group_average(self):
+        yr = '2018-01-01 '
+        time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '18'], utc=True).tolist()
+        value = [2, 3, 4, 5, 6]
+        expected_group_time = pd.to_datetime([yr + ' 12', yr + '15', yr + ' 18'], utc=True).tolist()
+        group_time, group_average, lookup, count = times.group_average(time=time, value=value, group_hours=3)
+        # time groups: 12:00, 15:00, and 18:00
+        np_test.assert_array_equal(x=expected_group_time, y=group_time)
+        np_test.assert_array_equal(x=[2.5, 4.5, 6], y=group_average)
+        np_test.assert_array_equal(x=[2, 2, 1], y=count)
+        self.assertEqual(0, lookup[expected_group_time[0]])
+        self.assertEqual(1, lookup[expected_group_time[1]])
+        self.assertEqual(2, lookup[expected_group_time[2]])
 
     @staticmethod
     def test_split():
         yr = '2018-01-01 '
         time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '18'], utc=True).tolist()
         value = [2, 3, 4, 5, 6]
-        split = times.split(time=time, value=value, hours=3, step=-2, skip=1)
         # time groups: 12:00, 15:00, and 18:00
         # averaging from group start until given index
-        # first [2, 2, 2] skipped
-        expected = [[2.5, 2.5, 2.5], [2.5, 2.5, 4], [2.5, 2.5, 4.5], [2.5, 4.5, 6]]
+        split = times.split(time=time, value=value, group_hours=3, step=-3, region=(0, -1))
+        expected = [[2, 2, 2], [2.5, 2.5, 2.5], [2.5, 2.5, 4], [2.5, 2.5, 4.5], [2.5, 4.5, 6]]
+        np_test.assert_array_equal(x=expected, y=split)
+
+        # time groups: 12:00, 15:00, and 18:00
+        # averaging from group start until given index
+        split = times.split(time=time, value=value, group_hours=3, step=3, region=(0, -1))
+        expected = [[2.5, 4.5, 6], [3, 4.5, 6], [4.5, 6, 6], [5, 6, 6], [6, 6, 6]]
         np_test.assert_array_equal(x=expected, y=split)
 
         # first index skipped
         # total group average is considered for each member regardless of index
-        split = times.split(time=time, value=value, hours=3, step=2, skip=1, whole_group=True)
+        split = times.split(time=time, value=value, group_hours=3, step=3, region=(1, -1), whole_group=True)
         expected = [[2.5, 4.5, 6], [4.5, 6, 6], [4.5, 6, 6], [6, 6, 6]]
         np_test.assert_array_equal(x=expected, y=split)
 

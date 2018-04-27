@@ -22,9 +22,9 @@ def base_layer(input_d, output_d, suffix, input=None):
 
 
 def mlp(x, input_d, output_d):
-    with tf.name_scope("mlp"):
+    with tf.name_scope("keras_mlp"):
         hidden_d = int(input_d / 2)
-        # layer = tf.nn.relu(base_layer(input_d, hidden_d, 'hid', input=x))
+        # layer = tf.nn.relu(linear(input_d, hidden_d, 'hid', input=x))
         layer = base_layer(input_d, hidden_d, 'hid', input=x)
         layer = bn_layer(hidden_d, hidden_d, input=layer)
         layer = base_layer(hidden_d, output_d, 'out', input=layer)
@@ -39,10 +39,10 @@ def lstm(ts_x, time_steps, num_units):
                                        time_major=True, parallel_iterations=4, dtype="float32")
         # outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=last_states, initial_state=last_states,
         #                   time_major=True, parallel_iterations=4, dtype="float32")
-        helper = tf.contrib.seq2seq.TrainingHelper(inputs=ts_x_reshaped,
-                                                   time_major=False, sequence_length=[time_steps])
-        decoder = tf.contrib.seq2seq.BasicDecoder(cell=rnn_cell, helper=helper, initial_state=last_states)
-        outputs, _ = tf.contrib.seq2seq.dynamic_decode(decoder=decoder, output_time_major=True)
+        # helper = tf.contrib.seq2seq.TrainingHelper(inputs=ts_x_reshaped,
+        #                                            time_major=False, sequence_length=[time_steps])
+        # decoder = tf.contrib.seq2seq.BasicDecoder(cell=rnn_cell, helper=helper, initial_state=last_states)
+        # outputs, _ = tf.contrib.seq2seq.dynamic_decode(decoder=decoder, output_time_major=True)
 
     lstm_kernel, lstm_bias = rnn_cell.variables
     tf.summary.histogram('lstm_kernel', lstm_kernel)
@@ -113,7 +113,8 @@ train_size = int(data_size * 0.8)
 batch_size = 100
 image_d = 4  # image is 4 x 4
 image_ch = 3  # 3 image channels (e.g. R G B)
-ts_input_d = 4  # input time series (4 time steps)
+ts_input_time = 5  # input time series (5 time steps)
+ts_input_d = 3  # three values per time step (input per LSTM Cell)
 output_d = 3
 cnx_d = 3  # context non recurrent features
 
@@ -122,7 +123,7 @@ lstm_out_d = 3
 conv_out_d = 8
 
 context = np.random.rand(data_size, cnx_d)
-ts_input = np.random.rand(data_size, ts_input_d)
+ts_input = np.random.rand(data_size, ts_input_time * ts_input_d)
 image = np.random.rand(data_size, image_ch * image_d * image_d)
 # set average of context, time series, and image as 3-d output
 label = np.concatenate((image.mean(axis=1, keepdims=True),
@@ -130,16 +131,16 @@ label = np.concatenate((image.mean(axis=1, keepdims=True),
                         ts_input.mean(axis=1,  keepdims=True)), axis=1)
 
 cnx_test = context[train_size:data_size, :]
-ts_input_test = util.row_to_matrix(ts_input[train_size:data_size, :], split_count=ts_input_d)
+ts_input_test = util.row_to_matrix(ts_input[train_size:data_size, :], split_count=ts_input_time)
 image_test = image[train_size:data_size, :]
 label_test = label[train_size:data_size, :]
 
 cnx_x = tf.placeholder(tf.float32, (None, cnx_d), name='cnx_x')
-ts_x = tf.placeholder(tf.float32, (None, ts_input_d, 1), name='ts_x')
+ts_x = tf.placeholder(tf.float32, (None, ts_input_time, ts_input_d), name='ts_x')
 im_x = tf.placeholder(tf.float32, (None, image_d * image_d * image_ch), name='image_x')
 y = tf.placeholder(tf.float32, (None, output_d), name='ts_y')
 
-lstm_out = lstm(ts_x, ts_input_d, lstm_out_d)
+lstm_out = lstm(ts_x, ts_input_time, lstm_out_d)
 conv_out = conv(im_x, image_d, image_ch, conv_out_d, dropout=0.9)
 mlp_x = tf.concat([conv_out, lstm_out, cnx_x], axis=1, name='mlp_x')
 mlp_out = mlp(mlp_x, lstm_out_d + conv_out_d + cnx_d, output_d)
@@ -163,7 +164,7 @@ session.run(tf.global_variables_initializer())
 for i in range(0, 1000):
     sample_idx = np.random.randint(train_size, size=batch_size)
     cnx_sample = context[sample_idx, :]
-    ts_input_sample = util.row_to_matrix(ts_input[sample_idx, :], split_count=ts_input_d)
+    ts_input_sample = util.row_to_matrix(ts_input[sample_idx, :], split_count=ts_input_time)
     image_sample = image[sample_idx, :]
     label_sample = label[sample_idx, :]
 
