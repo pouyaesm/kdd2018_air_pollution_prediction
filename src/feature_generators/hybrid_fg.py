@@ -11,7 +11,7 @@ import math
 
 class HybridFG(LSTMFG):
 
-    def __init__(self, cfg, time_steps):
+    def __init__(self, time_steps, cfg):
         """
         :param cfg:
         :param time_steps: number of values to be considered as input (for hour_x = 1) step_x = hour count
@@ -19,19 +19,22 @@ class HybridFG(LSTMFG):
         super(HybridFG, self).__init__(cfg, time_steps)
 
         # Basic parameters
-        self.meo_steps = 16
-        self.meo_group = 6
+        self.meo_steps = 1
+        self.meo_group = 24
         self.air_steps = 48
         self.air_group = 1
         self.time_is_one_hot = True
 
-        self._features_path = self.config[const.FEATURE_DIR] + \
-                              self.config[const.FEATURE] + \
-                              str(self.time_steps) + '_hybrid_'
-        self.chunk_count = self.config[const.CHUNK_COUNT]  # number of file chunks to put features into
+        features_base_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + str(self.time_steps)
+        self._features_path = features_base_path + '_hybrid_'
+
+        self._test_path = features_base_path + '_hybrid_tests.csv'
+
+        # number of file chunks to put features into
+        self.chunk_count = self.config.get(const.CHUNK_COUNT, 1)
 
         self.meo_keys = [const.TEMP]  # [const.TEMP, const.HUM, const.WSPD]
-        self.air_keys = [const.PM25, const.PM10, const.O3]  # [const.PM25, const.PM10, const.O3]
+        self.air_keys = [const.PM25]  # [const.PM25, const.PM10, const.O3]
 
         self.train_from = '00-01-01 00'
         self.train_to = '18-03-13 23'
@@ -49,46 +52,45 @@ class HybridFG(LSTMFG):
 
         self._current_chunk = -1  # current feature file chunk
 
-    def generate(self):
+    def generate(self, ts=None, stations=None, verbose=True, save=True):
         """
             Create a basic feature set from pollutant time series, per hour
             x: (time, longitude, latitude, pollutant values of t:t+n)
             y: (pollutant values of t+n:t+n+m)
         :return:
         """
-
         # load_model data
-        self.stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
-        ts = pd.read_csv(self.config[const.OBSERVED], sep=";", low_memory=False)
-        self.data = reform.group_by_station(ts=ts, stations=self.stations)
+        if ts is None:
+            ts = pd.read_csv(self.config[const.OBSERVED], sep=";", low_memory=False)
+        if stations is None:
+            self._stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
+        else:
+            self._stations = stations
+
+        self.data = reform.group_by_station(ts=ts, stations=self._stations)
 
         features = list()
         start_time = time.time()
-        stations = self.stations.to_dict(orient='index')
+        stations = self._stations.to_dict(orient='index')
         chunk_index = np.linspace(start=0, stop=len(stations) - 1, num=self.chunk_count + 1)
         next_chunk = 1
         total_data_points = 0
         for s_index, s_info in stations.items():
             if s_info[const.PREDICT] != 1: continue
             station_id = s_info[const.ID]
-            print(' Features of {sid} ({index} of {len})..'.
-                  format(sid=station_id, index=s_index + 1, len=len(stations)))
+            if verbose:
+                print(' Features of {sid} ({index} of {len})..'.
+                      format(sid=station_id, index=s_index + 1, len=len(stations)))
             s_data = self.data[station_id]
-            s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT, utc=True).tolist()
+            s_time = pd.to_datetime(s_data[const.TIME], format=const.T_FORMAT).tolist()
             first_x = self.air_group * self.air_steps - 1
-            last_x = len(s_time) - first_x - 48 - 1
-            station_features = self.generate_per_station(station_id, s_data, s_time, first_x, last_x)
+            station_features = self.generate_per_station(station_id, s_data, s_time, first_x)
             # aggregate all features per row
             features.extend(station_features)
             # save current chunk and go to next
-            if s_index >= chunk_index[next_chunk]:
-                # set name for columns
-                columns = [const.ID, const.TIME]
-                columns.extend(self.get_meo_columns())
-                columns.extend(self.get_air_columns())
-                columns.extend(self.get_label_columns())
+            if save and s_index >= chunk_index[next_chunk]:
                 # set and save the chunk of features
-                self.features = pd.DataFrame(data=features, columns=columns)
+                self.features = pd.DataFrame(data=features, columns=self.get_all_columns())
                 self.dropna().save_features(chunk_id=next_chunk)
                 total_data_points += len(self.features.index)
                 # go to next chunk
@@ -96,15 +98,18 @@ class HybridFG(LSTMFG):
                 self.features = pd.DataFrame()
                 next_chunk += 1
 
+        if not save:
+            self.features = pd.DataFrame(data=features, columns=self.get_all_columns())
+
         print(total_data_points, 'feature vectors generated in',
               time.time() - start_time, 'secs')
         return self
 
-    def generate_per_station(self, station_id, s_data, s_time, first_x, last_x):
+    def generate_per_station(self, station_id, s_data, s_time, first_x):
         # time of each data point (row)
-        t = s_time[first_x:last_x + 1]  # first data point is started at 'first_x'
+        t = s_time[first_x:]  # first data point is started at 'first_x'
 
-        region = (first_x, last_x)  # region of values to be extracted as features
+        region = (first_x, -1)  # region of values to be extracted as features
         # weather time series of last 'meo_steps' every 'meo_group' hours
         meo_all = list()
         for meo_key in self.meo_keys:
@@ -127,8 +132,9 @@ class HybridFG(LSTMFG):
             .reshape((-1, self.air_steps * len(air_all))).tolist()
 
         # next 48 pollutant values to be predicted
+        pollutant = self.config[const.POLLUTANT]
         label = times.split(time=s_time, value=s_data[pollutant].tolist(),
-                            group_hours=1, step=48, region=(first_x + 1, last_x + 1))
+                            group_hours=1, step=48, region=(first_x + 1, -1))
         # station id per row
         sid = [station_id] * (len(s_time) - first_x)
 
@@ -198,6 +204,12 @@ class HybridFG(LSTMFG):
                                                 from_time=test_from, to_time=test_to)
             features[const.VALID] = times.select(df=input_features, time_key=const.TIME,
                                           from_time=self.valid_from, to_time=self.valid_to)
+            # add feature to global test data
+            if len(self._test.index) == 0:
+                self._test = features[const.TEST]
+            else:
+                self._test = self._test.append(other=features[const.TEST], ignore_index=True)
+
             # explode features into parts (context, weather time series, etc.)
             for key in features:
                 context, meo_ts, air_ts, label = self.explode(features[key])
@@ -224,13 +236,21 @@ class HybridFG(LSTMFG):
         if len(self._stations.index) == 0:
             self._stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
         new_features = features.merge(right=self._stations, how='left', on=const.ID)
+
+        # normalize all measured feature values
+        # extract basic names from column names by removing indices, e.g. PM10_2 -> PM10
+        # names = [column.split('_')[0] for column in self.get_measured_columns()]
+        # city = self.config[const.CITY]
+        # for index, column in enumerate(self.get_measured_columns()):
+        #     new_features[column] = FG.normalize(new_features[column], name=names[index], city=city)
+
         position = new_features[[const.LONG, const.LAT]].as_matrix().tolist()
-        features_time = pd.to_datetime(new_features[const.TIME], utc=True, format=const.T_FORMAT)
+        features_time = pd.to_datetime(new_features[const.TIME], format=const.T_FORMAT)
 
         if self.time_is_one_hot:
             # Extract even hours as a one-hot vector
             hour_values = ["%02d" % h for h in range(0, 12)]  # only consider even hours to have 12 bits
-            hours = pd.to_datetime(features_time.dt.hour // 2, utc=True, format='%H')
+            hours = pd.to_datetime(features_time.dt.hour // 2, format='%H')
             hours_oh = times.one_hot(times=hours, columns=hour_values, time_format='%H').values.tolist()
             # Extract days of week as one-hot vector
             dow_values = ["%d" % dow for dow in range(0, 7)]  # days of week
@@ -265,8 +285,22 @@ class HybridFG(LSTMFG):
         else:
             return 2 + 1 + 1  # long, lat, hour, day_of_week
 
+    def get_measured_columns(self):
+        columns = self.get_meo_columns()
+        columns.extend(self.get_air_columns())
+        columns.extend(self.get_label_columns())
+        return columns
+
+    def get_all_columns(self):
+        # set name for columns
+        columns = [const.ID, const.TIME]
+        columns.extend(self.get_meo_columns())
+        columns.extend(self.get_air_columns())
+        columns.extend(self.get_label_columns())
+        return columns
+
     def get_label_columns(self):
-        return ['l_' + str(i) for i in range(1, 49)]
+        return [self.config[const.POLLUTANT] + '__' + str(i) for i in range(1, 49)]
 
     def get_meo_columns(self):
         columns = []
@@ -274,6 +308,9 @@ class HybridFG(LSTMFG):
             for meo_key in self.meo_keys:
                 columns.extend(['{k}_{i}'.format(k=meo_key, i=i)])
         return columns
+
+    def get_features(self):
+        return self.features
 
     def get_air_columns(self):
         columns = []
@@ -297,9 +334,7 @@ class HybridFG(LSTMFG):
 
     def save_test(self, predicted_values):
         augmented_test = util.add_columns(self._test, columns=predicted_values, name_prefix='f')
-        test_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + \
-                    str(self.time_steps) + '_lstm_tests.csv'
-        util.write(augmented_test, address=test_path)
+        util.write(augmented_test, address=self._test_path)
         print(len(augmented_test.index), 'predicted tests are written to file')
 
 
@@ -320,13 +355,14 @@ if __name__ == "__main__":
         for pollutant, sample_count in cases[city].items():
             print(city, pollutant, "started..")
             cfg = {
+                const.CITY: city,
                 const.OBSERVED: config[getattr(const, city + '_OBSERVED')],
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.POLLUTANT: pollutant,
-                const.CHUNK_COUNT: 4
+                const.CHUNK_COUNT: 6,
             }
-            fg = HybridFG(cfg, time_steps=48)
+            fg = HybridFG(cfg=cfg, time_steps=48)
             fg.generate()
             print(city, pollutant, "done!")

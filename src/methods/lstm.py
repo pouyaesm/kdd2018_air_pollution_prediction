@@ -16,14 +16,15 @@ from src.methods.model import Model
 class LSTM(Model):
 
     def __init__(self, cfg, time_steps):
+        super(LSTM, self).__init__()
         self.config = cfg
-        self.model = Sequential()
+        self._model = Sequential()
         self.time_steps = time_steps
         # create tensorflow session
         tf.reset_default_graph()
-        self.session = tf.Session()
-        self.model = dict()  # contains different points in a tensorflow computation graph
-        self.fg = self.fg = LSTMFG({
+        self._session = tf.Session()
+        self._model = dict()  # contains different points in a tensorflow computation graph
+        self._fg = self._fg = LSTMFG({
                 const.FEATURE_DIR: self.config[const.FEATURE_DIR],
                 const.FEATURE: self.config[const.FEATURE],
         }, time_steps=self.time_steps)
@@ -120,56 +121,41 @@ class LSTM(Model):
 
         # summary writer
         summary_writer = tf.summary.FileWriter('logs/lstm/fast1')
-        summary_writer.add_graph(self.session.graph)
+        summary_writer.add_graph(self._session.graph)
 
         # initialize session variables
-        self.session.run(tf.global_variables_initializer())
+        self._session.run(tf.global_variables_initializer())
 
         for i in range(0, 3500):
-            batch_x, batch_y = self.fg.next(batch_size=batch_size, time_steps=self.time_steps)
-            self.session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
+            batch_x, batch_y = self._fg.next(batch_size=batch_size, time_steps=self.time_steps)
+            self._session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
             # summary, _ = sess.run([summary_all, train_step], feed_dict={x: batch_x, y: batch_y})
             # summary_writer.add_summary(summary, i)
             if i % 10 == 0:
-                smp, los = self.session.run([model['smape'], model['loss']],
-                                    feed_dict={model['x']: batch_x, model['y']: batch_y})
+                smp, los = self._session.run([model['smape'], model['loss']],
+                                             feed_dict={model['x']: batch_x, model['y']: batch_y})
                 print(i, " Loss ", los, ", SMAPE ", smp)
 
-        self.model = model  # make model accessible to other methods
+        self._model = model  # make model accessible to other methods
 
         # Report SMAPE error on test set
-        test_data, test_label = self.fg.test(time_steps=self.time_steps)
-        print("Testing SMAPE:", self.session.run(model['smape'], feed_dict=
+        test_data, test_label = self._fg.test(time_steps=self.time_steps)
+        print("Testing SMAPE:", self._session.run(model['smape'], feed_dict=
         {model['x']: test_data, model['y']: test_label}))
 
         return self
 
     def test(self):
-        test_data, test_label = self.fg.test(time_steps=self.time_steps)
-        smp = self.session.run(self.model['smape'], feed_dict=
-        {self.model['x']: test_data, self.model['y']: test_label})
+        test_data, test_label = self._fg.test(time_steps=self.time_steps)
+        smp = self._session.run(self._model['smape'], feed_dict=
+        {self._model['x']: test_data, self._model['y']: test_label})
         print("Testing SMAPE:", smp)
         predicted_label = self.predict(test_data)
-        self.fg.save_test(predicted_label)
+        self._fg.save_test(predicted_label)
         return self
-
-    def evaluate(self, actual, forecast):
-        actual_array = actual.reshape(actual.size)
-        forecast_array = forecast.reshape(forecast.size)
-        return util.SMAPE(forecast=forecast_array, actual=actual_array)
 
     def predict(self, x):
-        return self.session.run(self.model['predictor'], feed_dict={self.model['x']: x})
-
-    def load_model(self):
-        self.model = self.build()
-        tf.train.Saver().restore(sess=self.session, save_path=self._model_path)
-        return self
-
-    def save_model(self):
-        save_path = tf.train.Saver().save(sess=self.session, save_path=self._model_path)
-        print("Model saved in path: %s" % save_path)
-        return self
+        return self._session.run(self._model['predictor'], feed_dict={self._model['x']: x})
 
 
 if __name__ == "__main__":

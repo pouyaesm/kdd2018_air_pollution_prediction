@@ -13,16 +13,16 @@ from src import util
 
 config = settings.config[const.DEFAULT]
 feature_dir = config[const.FEATURE_DIR]
-suffix = '48_lstm_tests.csv'
+suffix = '48_hybrid_tests.csv'
 paths = {
     'BJ': {
-        'PM25': feature_dir + const.BJ_PM25_ + suffix,
-        'PM10': feature_dir + const.BJ_PM10_ + suffix,
-        'O3': feature_dir + const.BJ_O3_ + suffix,
+        'PM2.5': feature_dir + const.BJ_PM25_ + suffix,
+        # 'PM10': feature_dir + const.BJ_PM10_ + suffix,
+        # 'O3': feature_dir + const.BJ_O3_ + suffix,
     },
     'LD': {
-        'PM25': feature_dir + const.LD_PM25_ + suffix,
-        'PM10': feature_dir + const.LD_PM10_ + suffix,
+        # 'PM25': feature_dir + const.LD_PM25_ + suffix,
+        # 'PM10': feature_dir + const.LD_PM10_ + suffix,
     }
 }
 
@@ -40,7 +40,7 @@ for city in paths:
             data = station_data[station[const.ID]] if station[const.PREDICT] == 1 else pd.DataFrame()
             if len(data.index) == 0:
                 continue  # no prediction for this station
-            actual = data[['l' + str(i) for i in range(0, 48)]].as_matrix()
+            actual = data[[pollutant + '__' + str(i) for i in range(1, 49)]].as_matrix()
             forecast = data[['f' + str(i) for i in range(0, 48)]].as_matrix()
             station['SMAPE'] = util.SMAPE(actual=actual, forecast=forecast)
             smape = pd.DataFrame(

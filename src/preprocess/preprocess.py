@@ -9,12 +9,23 @@ import io
 
 class PreProcess:
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         self.config = config  # location of input/output files
         self.obs = pd.DataFrame()  # merged observed air quality and meteorology data per station
         self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
         self.stations = pd.DataFrame()  # all stations with their attributes such as type and position
         self.grids = pd.DataFrame()  # information per weather grid
+
+    def initialize(self, observed, stations):
+        """
+            Set observed and stations data to be used for filling
+        :param observed:
+        :param stations:
+        :return:
+        """
+        self.obs = observed
+        self.stations = stations
+        return self
 
     def get_live(self):
         return None
@@ -32,13 +43,18 @@ class PreProcess:
         self.obs = self.obs.sort_values([const.ID, const.TIME], ascending=True)
         return self
 
-    def fill(self, max_interval=0):
+    def fill(self, observed=None, stations=None, max_interval=0):
         """
             Fill missing value as the average of two nearest values in the time-line
             Per station
             Assumption: observed data must be sorted by station then by time
         :return:
         """
+        # Can bypass load and pre-process and use the filling values directly
+        if observed is not None:
+            self.obs = observed
+        if stations is not None:
+            self.stations = stations
         # Reset time series indices to ensure a closed interval
         self.obs.reset_index(drop=True, inplace=True)
 
@@ -91,7 +107,7 @@ class PreProcess:
 
         return self
 
-    def append_grid(self, include_history=False):
+    def append_grid(self):
         """
             Load grid offline and live data, append the complementary weather info
             to observed time series
@@ -178,3 +194,9 @@ class PreProcess:
             self.grids.to_csv(self.config[const.GRIDS], sep=';', index=False)
         print('Data saved.')
         return self
+
+    def get_observed(self):
+        return self.obs
+
+    def get_stations(self):
+        return self.stations

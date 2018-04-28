@@ -416,3 +416,7 @@ def select(df: pd.DataFrame, time_key,
 
 def one_hot(times: pd.Series, columns, time_format):
     return pd.get_dummies(times.dt.strftime(time_format), columns=columns).T.reindex(columns).T.fillna(0)
+
+
+def to_datetime(date):
+    return datetime.combine(date, datetime.min.time())

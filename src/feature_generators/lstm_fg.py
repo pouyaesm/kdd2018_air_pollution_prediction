@@ -16,15 +16,15 @@ class LSTMFG:
         """
         self.config = cfg
         self.data = pd.DataFrame()  # time series data per station
-        self.stations = pd.DataFrame()  # stations of time series
+        self._stations = pd.DataFrame()  # stations of time series
         self.features = pd.DataFrame()  # extracted features
         self.time_steps = time_steps
         self._train = pd.DataFrame()
         self._test = pd.DataFrame()
         self._station_count = 0
         self._valid_stations = pd.DataFrame()
-        self._features_path = self.config[const.FEATURE_DIR] + \
-                              self.config[const.FEATURE] + \
+        self._features_path = self.config.get(const.FEATURE_DIR, "") + \
+                              self.config.get(const.FEATURE, "") + \
                               str(self.time_steps) + '_lstm.csv'
 
     def generate(self):

@@ -11,7 +11,7 @@ from src.preprocess.preprocess import PreProcess
 class PreProcessBJ(PreProcess):
 
     def __init__(self, config):
-        super().__init__(config)
+        super(PreProcessBJ, self).__init__(config)
         self.config = config  # location of input/output files
         self.obs = pd.DataFrame()  # merged observed air quality and meteorology data per station
         self.missing = pd.DataFrame()  # indicator of missing values in observed data-frame
@@ -80,10 +80,11 @@ class PreProcessBJ(PreProcess):
         meo[const.TIME] = pd.to_datetime(meo[const.TIME], utc=True)
 
         # Change invalid values to NaN
-        meo.loc[meo['temperature'] > 100, 'temperature'] = np.nan  # max value ~ 40 c
-        meo.loc[meo['wind_speed'] > 100, 'wind_speed'] = np.nan  # max value ~ 15 m/s
-        meo.loc[meo['wind_direction'] > 360, 'wind_direction'] = np.nan  # value = [0, 360] degree
-        meo.loc[meo['humidity'] > 100, 'humidity'] = np.nan  # value = [0, 100] percent
+        meo.loc[meo[const.TEMP] > 100, const.TEMP] = np.nan  # max value ~ 40 c
+        meo.loc[meo[const.PRES] > 10000, const.PRES] = np.nan  # max value ~ 2000
+        meo.loc[meo[const.WSPD] > 100, const.WSPD] = np.nan  # max value ~ 15 m/s
+        meo.loc[meo[const.WDIR] > 360, const.WDIR] = np.nan  # value = [0, 360] degree
+        meo.loc[meo[const.HUM] > 100, const.HUM] = np.nan  # value = [0, 100] percent
 
         # Change negative reports of pollutants to NaN
         pollutants = [const.PM25, const.PM10, const.O3]

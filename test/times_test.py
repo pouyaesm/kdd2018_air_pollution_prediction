@@ -3,6 +3,7 @@ import pandas as pd
 import numpy.testing as np_test
 import pandas.util.testing as pd_test
 from src.preprocess import times
+from datetime import datetime
 
 
 class UtilTest(unittest.TestCase):
@@ -164,3 +165,9 @@ class UtilTest(unittest.TestCase):
         s = pd.to_datetime(pd.Series(data=[1, 2, 4]), utc=True, format='%H')
         one_hot = times.one_hot(times=s, columns=columns, time_format='%H')
         np_test.assert_array_equal(x=[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]], y=one_hot)
+
+    def test_to_datetime(self):
+        d_time = datetime.utcnow()
+        d = d_time.date()
+        expected = datetime.strptime(d_time.strftime('%y-%m-%d'), '%y-%m-%d')
+        self.assertEqual(times.to_datetime(date=d), expected)
