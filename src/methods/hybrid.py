@@ -14,8 +14,8 @@ class Hybrid(LSTM):
 
     def __init__(self, cfg):
         # Structure parameters
-        self.has_context = False
-        self.has_meo = False
+        self.has_context = True
+        self.has_meo = True
 
         # Init configuration
         self.time_steps = cfg[const.TIME_STEPS]
@@ -38,8 +38,8 @@ class Hybrid(LSTM):
     def lstm(ts_x, time_steps, num_units, scope='lstm'):
         with tf.name_scope(scope):
             ts_x_reshaped = tf.stack(tf.unstack(value=ts_x, num=time_steps, axis=1, name='input_steps'), axis=0)
-            rnn_cell = rnn.BasicLSTMCell(num_units, name=scope + '_cell')
-            # rnn_cell = rnn.LSTMCell(num_units, name=scope + '_cell')
+            # rnn_cell = rnn.BasicLSTMCell(num_units, name=scope + '_cell')
+            rnn_cell = rnn.LSTMCell(num_units, name=scope + '_cell')
             outputs, _ = tf.nn.dynamic_rnn(cell=rnn_cell, inputs=ts_x_reshaped,
                                                      time_major=True, parallel_iterations=4, dtype="float32")
             lstm_kernel, lstm_bias = rnn_cell.variables
@@ -52,10 +52,13 @@ class Hybrid(LSTM):
     @staticmethod
     def mlp(x, input_d, output_d, scope='mlp'):
         with tf.name_scope(scope):
-            hidden_d = input_d  # int(input_d / 2)
+            # hidden_d = input_d  # int(input_d / 2)
             # hidden layers
-            layer = tf.nn.relu(NN.linear(input_d, output_d, 'hid1', input=x))
+            layer = NN.batch_norm(input_d, input_d, input=x)
+            layer = tf.nn.relu(NN.linear(input_d, output_d, 'hid1', input=layer))
             layer = NN.batch_norm(output_d, output_d, input=layer)
+            # layer = tf.nn.relu(NN.linear(output_d, output_d, 'hid2', input=layer))
+            # layer = NN.batch_norm(output_d, output_d, input=layer)
             # output layer
             layer = NN.linear(output_d, output_d, 'out', input=layer)
         return layer
@@ -63,14 +66,23 @@ class Hybrid(LSTM):
     def build(self):
         meo_out_d = 6
         air_out_d = 18
-        meo_in_d = len(self._fg.meo_keys)  # number of features related to meteorology
-        # air_in_d = len(self.fg.air_keys)  # number of features related to air quality
+
         cnx_x = tf.placeholder(tf.float32, (None, self._fg.get_context_count()), name='cnx_x')
-        meo_x = tf.placeholder(tf.float32, (None, self._fg.meo_steps, meo_in_d), name='ts_meo_x')
+
+        # lstm-s of weather time-series
+        meo_x = dict()
+        for name in self._fg.meo_keys:
+            meo_x[name] = tf.placeholder(tf.float32, (None, self._fg.meo_steps, 1),
+                                         name='ts_' + name + '_x')
+
+        # lstm-s of air quality time-series
         air_x = dict()
-        for name in [const.PM25]:
+        # for name in [const.PM25]:
+        # for name in [const.PM25, const.PM10]:
+        for name in self._fg.air_keys:
             air_x[name] = tf.placeholder(tf.float32, (None, self._fg.air_steps, 1),
                                          name='ts_' + name + '_x')
+
         y = tf.placeholder(tf.float32, (None, 48), name='ts_y')
 
         # meo_out = Hybrid.lstm(ts_meo_x, self.fg.meo_steps, meo_out_d, scope='lstm_meo_')
@@ -79,19 +91,25 @@ class Hybrid(LSTM):
         # prediction = Hybrid.mlp(mlp_x, meo_out_d + air_out_d + self.fg.get_context_count(), 48)
 
         mlp_input = list()  # input to the last NN that outputs the final prediction
-        meo_out = Hybrid.lstm(meo_x, self._fg.meo_steps, 1, scope='lstm_meo')
+
         air_out = dict()
         for name, input in air_x.items():
             air_out[name] = Hybrid.lstm(input, self._fg.air_steps, 1, scope='lstm_' + name)
             mlp_input.append(air_out[name])
 
         mlp_d = self._fg.air_steps * len(air_out)  # input to mlp per air quality measure
+
+        if self.has_meo:
+            meo_out = dict()
+            for name, input in meo_x.items():
+                meo_out[name] = Hybrid.lstm(input, self._fg.meo_steps, 1, scope='lstm_' + name)
+                mlp_input.append(meo_out[name])
+            mlp_d += self._fg.meo_steps * len(meo_out)
+
         if self.has_context:
             mlp_input.append(cnx_x)
             mlp_d += self._fg.get_context_count()
-        if self.has_meo:
-            mlp_input.append(meo_out)
-            mlp_d += self._fg.meo_steps
+
         mlp_x = tf.concat(mlp_input, axis=1, name='mlp_x')
         prediction = Hybrid.mlp(mlp_x, mlp_d, 48)
 
@@ -113,7 +131,7 @@ class Hybrid(LSTM):
         loss_function = smape if self.config[const.LOSS_FUNCTION] == const.MEAN_PERCENT \
             else tf.reduce_mean(nom)
         # optimization
-        train_step = tf.train.AdamOptimizer(learning_rate=0.015).minimize(loss_function)
+        train_step = tf.train.AdamOptimizer(learning_rate=0.002).minimize(loss_function)
 
         # merge all summaries
         summary_all = tf.summary.merge_all()
@@ -156,7 +174,7 @@ class Hybrid(LSTM):
                 context, meo_ts, air_ts, label = self._fg.holdout(key=const.TEST)
                 test_smp = self.run(model['smape'], model=model,
                                c=context, m=meo_ts, a=air_ts, l=label)
-                print(i + 1, "SMAPE tr", train_smp, " vs ", test_smp, "tst")
+                print(i, "SMAPE tr", train_smp, " vs ", test_smp, "tst")
 
         self._model = model  # make model accessible to other methods
 
@@ -178,12 +196,18 @@ class Hybrid(LSTM):
         :param l:
         :return:
         """
-        feed_dict = {model['cnx']: c, model['meo']: m, model['y']: l}
+        feed_dict = {model['cnx']: c, model['y']: l}
         # feed each time series to a different lstm, instead of all to one lstm
-        order = {const.PM25: 0, const.PM10: 1, const.O3: 2}
+        air_order = {const.PM25: 0, const.PM10: 1, const.O3: 2}
         for name, input in model['air'].items():
-            i = order[name]
+            i = air_order[name]
             feed_dict[input] = a[:, :, i:i + 1]  # input to lstm of 'name'
+
+        meo_order = {const.TEMP: 0, const.HUM: 1, const.WSPD: 2}
+        for name, input in model['meo'].items():
+            i = meo_order[name]
+            feed_dict[input] = m[:, :, i:i + 1]  # input to lstm of 'name'
+
         return self._session.run(nodes, feed_dict=feed_dict)
 
     def test(self):
@@ -229,11 +253,11 @@ if __name__ == "__main__":
                 const.TEST_FROM: '18-04-01 23',
                 const.TEST_TO: '18-04-26 23',
                 const.LOSS_FUNCTION: const.MEAN_PERCENT,
-                const.CHUNK_COUNT: 6,
-                const.ROTATE: 3,
-                const.EPOCHS: 3000,
-                const.BATCH_SIZE: 1000,
-                const.TIME_STEPS: 48
+                const.CHUNK_COUNT: 8,
+                const.TIME_STEPS: 12,
+                const.EPOCHS: 10000,
+                const.ROTATE: 2,
+                const.BATCH_SIZE: 2500
             }
             hybrid = Hybrid(cfg).train().save_model()
             print(city, pollutant, "done!")

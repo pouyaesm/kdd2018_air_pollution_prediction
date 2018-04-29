@@ -35,9 +35,10 @@ config_ld = {
 
 do_bj = True
 do_ld = True
+max_interval = 0
 if do_bj:
     print('Processing beijing..')
-    pre_process_bj = PreProcessBJ(config_bj).process().append_grid().fill(max_interval=3)
+    pre_process_bj = PreProcessBJ(config_bj).process().append_grid().fill(max_interval=max_interval)
     print('No. observed rows:', len(pre_process_bj.obs))
     print('No. stations:', len(pre_process_bj.stations),
           ', for prediction:', (pre_process_bj.stations['predict'] == 1).sum())
@@ -46,7 +47,7 @@ if do_bj:
 
 if do_ld:
     print('Processing london..')
-    pre_process_ld = PreProcessLD(config_ld).process().append_grid().fill(max_interval=3)
+    pre_process_ld = PreProcessLD(config_ld).process().append_grid().fill(max_interval=max_interval)
     print('No. observed rows:', len(pre_process_ld.obs))
     print('No. stations:', len(pre_process_ld.stations),
           ', for prediction:', (pre_process_ld.stations['predict'] == 1).sum())

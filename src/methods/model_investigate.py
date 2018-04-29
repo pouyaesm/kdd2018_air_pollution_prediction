@@ -13,7 +13,7 @@ from src import util
 
 config = settings.config[const.DEFAULT]
 feature_dir = config[const.FEATURE_DIR]
-suffix = '48_hybrid_tests.csv'
+suffix = '12_hybrid_tests.csv'
 paths = {
     'BJ': {
         'PM2.5': feature_dir + const.BJ_PM25_ + suffix,

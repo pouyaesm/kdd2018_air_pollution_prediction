@@ -28,11 +28,11 @@ def generate():
                 const.POLLUTANT: pollutant,
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
+                const.LOSS_FUNCTION: const.MEAN_PERCENT,
                 const.TEST_FROM: '18-04-01 23',
                 const.TEST_TO: '18-04-26 23',
-                const.CHUNK_COUNT: 6,
-                const.LOSS_FUNCTION: const.MEAN_PERCENT,
-                const.TIME_STEPS: 48
+                const.CHUNK_COUNT: 8,
+                const.TIME_STEPS: 12
             }
             # LSTM(cfg, time_steps=48).load_model().test()
             Hybrid(cfg).load_model().test()

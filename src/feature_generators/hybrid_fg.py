@@ -19,11 +19,15 @@ class HybridFG(LSTMFG):
         super(HybridFG, self).__init__(cfg, time_steps)
 
         # Basic parameters
-        self.meo_steps = 1
-        self.meo_group = 24
-        self.air_steps = 48
+        self.meo_steps = 24
+        self.meo_group = 3
+        self.air_steps = 12
         self.air_group = 1
         self.time_is_one_hot = True
+        self.meo_keys = [const.TEMP, const.HUM, const.WSPD]  # [const.TEMP, const.HUM, const.WSPD]
+        # self.air_keys = [const.PM25]
+        # self.air_keys = [const.PM25, const.PM10]  # [const.PM25, const.PM10, const.O3]
+        self.air_keys = [const.PM25, const.PM10, const.O3]
 
         features_base_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + str(self.time_steps)
         self._features_path = features_base_path + '_hybrid_'
@@ -32,9 +36,6 @@ class HybridFG(LSTMFG):
 
         # number of file chunks to put features into
         self.chunk_count = self.config.get(const.CHUNK_COUNT, 1)
-
-        self.meo_keys = [const.TEMP]  # [const.TEMP, const.HUM, const.WSPD]
-        self.air_keys = [const.PM25]  # [const.PM25, const.PM10, const.O3]
 
         self.train_from = '00-01-01 00'
         self.train_to = '18-03-13 23'
@@ -158,6 +159,7 @@ class HybridFG(LSTMFG):
             self._current_chunk = chunk_id
         index = const.TRAIN
         sample_idx = np.random.randint(len(self._context[index]), size=batch_size)
+        sample_idx[0] = 0
         context = self._context[index][sample_idx, :]
         meo_ts = self._meo[index][sample_idx, :]
         air_ts = self._air[index][sample_idx, :]
@@ -361,8 +363,8 @@ if __name__ == "__main__":
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.POLLUTANT: pollutant,
-                const.CHUNK_COUNT: 6,
+                const.CHUNK_COUNT: 8,
             }
-            fg = HybridFG(cfg=cfg, time_steps=48)
+            fg = HybridFG(cfg=cfg, time_steps=12)
             fg.generate()
             print(city, pollutant, "done!")
