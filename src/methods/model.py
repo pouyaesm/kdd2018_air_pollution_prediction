@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import tensorflow as tf
+from datetime import datetime
 
 class Model:
 
@@ -24,12 +25,14 @@ class Model:
     def build(self):
         return self
 
-    def load_model(self):
+    def load_model(self, mode='final'):
         self._model = self.build()
-        tf.train.Saver().restore(sess=self._session, save_path=self._model_path)
+        model_path = self._model_path.replace('#', mode)
+        tf.train.Saver().restore(sess=self._session, save_path=model_path)
         return self
 
-    def save_model(self):
-        save_path = tf.train.Saver().save(sess=self._session, save_path=self._model_path)
-        print("Model saved in path: %s" % save_path)
+    def save_model(self, mode='final'):
+        model_path = self._model_path.replace('#', mode)
+        save_path = tf.train.Saver().save(sess=self._session, save_path=model_path)
+        print(datetime.now().time(), "Model saved in path: %s" % save_path)
         return self

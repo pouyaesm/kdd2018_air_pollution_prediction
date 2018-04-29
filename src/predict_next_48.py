@@ -38,15 +38,23 @@ for city, pollutants in cases.items():
     print('Nan PM2.5 before {b} and after {a} filling'.format(
         b=nan_rows, a=pd.isnull(observed[const.PM25]).sum()))
 
+    all_features = dict()
+    station_features = dict()
     for pollutant in pollutants:
-        all_features = HybridFG(time_steps=0, cfg={const.POLLUTANT: pollutant}).generate(
+        features = HybridFG(time_steps=0, cfg={const.POLLUTANT: pollutant}).generate(
             ts=observed, stations=stations, verbose=False, save=False).get_features()
-        station_features = reform.group_by_station(ts=all_features, stations=stations)
+        station_features[pollutant] = reform.group_by_station(ts=features, stations=stations)
+
+    for pollutant in pollutants:
+        # station_features = reform.group_by_station(ts=all_features, stations=stations)
         for station_id, features in station_features.items():
             last_feature = features.ix[features[const.TIME].idxmax()]
             time_lag = tomorrow - last_feature[const.TIME].to_pydatetime()
-            # predict until the time_lag to 00:00 of tomorrow is covered
+            # predict to cover the time_lag to 00:00
             a = 1
             # predict for next 48 hours
 
         print(city, pollutant, 'done.')
+
+def load_model(city, pollutant):
+    return 1

@@ -2,6 +2,7 @@ from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Activation
 from keras.optimizers import Nadam, Adam
 import tensorflow as tf
+from tensorflow.python.training import moving_averages
 import numpy as np
 
 class NN:
@@ -39,13 +40,60 @@ class NN:
         model.fit(x_train, y_train, epochs=100, batch_size=1000, verbose=1)
         return model
 
+    # @staticmethod
+    # def batch_norm(input_d, output_d, input=None):
+    #     mean, var = tf.nn.moments(input, [0])
+    #     scale = tf.Variable(tf.ones([input_d]))
+    #     beta = tf.Variable(tf.zeros([output_d]))
+    #     bn = tf.nn.batch_normalization(input, mean, var, beta, scale, variance_epsilon=1e-3)
+    #     return tf.identity(bn, name="bn")
+
     @staticmethod
-    def batch_norm(input_d, output_d, input=None):
-        mean, var = tf.nn.moments(input, [0])
-        scale = tf.Variable(tf.ones([input_d]))
-        beta = tf.Variable(tf.zeros([output_d]))
-        bn = tf.nn.batch_normalization(input, mean, var, beta, scale, variance_epsilon=1e-3)
-        return tf.identity(bn, name="bn")
+    def batch_norm(input, scope, is_training: tf.placeholder, epsilon=0.001, decay=0.99, reuse=None):
+        # Connect the boolean tensor-flow to the corresponding python boolean is_training
+        return tf.cond(is_training,
+                       true_fn=lambda: NN.batch_norm_layer(input, scope, True, epsilon, decay, reuse),
+                       false_fn=lambda: NN.batch_norm_layer(input, scope, False, epsilon, decay, reuse=True))
+
+    @staticmethod
+    def batch_norm_layer(input, scope, is_training: bool, epsilon=0.001, decay=0.99, reuse=None):
+        """
+        Performs a batch normalization layer
+
+        Args:
+            input: input tensor
+            scope: scope name
+            is_training: python boolean value
+            epsilon: the variance epsilon - a small float number to avoid dividing by 0
+            decay: the moving average decay
+
+        Returns:
+            The ops of a batch normalization layer
+        """
+        with tf.variable_scope(scope, reuse=reuse):
+            shape = input.get_shape().as_list()
+            # gamma: a trainable scale factor
+            gamma = tf.get_variable("gamma", shape[-1], initializer=tf.constant_initializer(1.0), trainable=True)
+            # beta: a trainable shift value
+            beta = tf.get_variable("beta", shape[-1], initializer=tf.constant_initializer(0.0), trainable=True)
+            moving_avg = tf.get_variable("moving_avg", shape[-1], initializer=tf.constant_initializer(0.0),
+                                         trainable=False)
+            moving_var = tf.get_variable("moving_var", shape[-1], initializer=tf.constant_initializer(1.0),
+                                         trainable=False)
+            if is_training:
+                # tf.nn.moments == Calculate the mean and the variance of the tensor x
+                avg, var = tf.nn.moments(input, list(range(len(shape) - 1)))
+                update_moving_avg = moving_averages.assign_moving_average(moving_avg, avg, decay)
+                update_moving_var = moving_averages.assign_moving_average(moving_var, var, decay)
+                control_inputs = [update_moving_avg, update_moving_var]
+            else:
+                avg = moving_avg
+                var = moving_var
+                control_inputs = []
+            with tf.control_dependencies(control_inputs):
+                output = tf.nn.batch_normalization(input, avg, var, offset=beta, scale=gamma, variance_epsilon=epsilon)
+
+        return output
 
     @staticmethod
     def linear(input_d, output_d, suffix, input=None):

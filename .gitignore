@@ -1,3 +1,13 @@
+# project config file, data, and outputted models #
+###################################################
+data
+features
+config.ini
+external_libraries
+models
+logs
+submits
+
 # Compiled source #
 ###################
 *.com
@@ -39,12 +49,3 @@ tmtagsHistory
 *.sublime-project
 *.sublime-workspace
 .bundle
-
-# project config file, data, and outputted models #
-###################################################
-data
-features
-config.ini
-external_libraries
-models
-logs

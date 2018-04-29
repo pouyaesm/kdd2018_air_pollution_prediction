@@ -82,6 +82,7 @@ PREDICT = 'predict'
 PM25 = 'PM2.5'
 PM10 = 'PM10'
 O3 = 'O3'
+NO2 = 'NO2'
 CITY = 'city'
 LONG = 'longitude'
 LAT = 'latitude'
@@ -94,8 +95,7 @@ S_TYPE = 'station_type'
 T_FORMAT = '%y-%m-%d %H'
 T_FORMAT_FULL = '%Y-%m-%d %H:%M:%S'
 
-TEST_START = 'test_start'
-TEST_END = 'test_end'
+SUBMIT_DIR = 'SUBMIT_DIR'
 
 MNIST_FOLDER = 'MNIST_FOLDER'
 
@@ -130,4 +130,4 @@ def func():
     global GRIDS, GRID_DATA, GRID_LIVE, GRID_URL, BJ_GRIDS, BJ_GRID_DATA, BJ_GRID_URL
     global LD_GRIDS, LD_GRID_DATA, LD_GRID_URL, BJ_GRID_LIVE, LD_GRID_LIVE
     global MNIST_FOLDER
-    global TEST_START, TEST_END
+    global SUBMIT_DIR

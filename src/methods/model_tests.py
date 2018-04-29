@@ -35,7 +35,7 @@ def generate():
                 const.TIME_STEPS: 12
             }
             # LSTM(cfg, time_steps=48).load_model().test()
-            Hybrid(cfg).load_model().test()
+            Hybrid(cfg).load_model(mode='best').test()
             print(city, pollutant, 'done!')
 
 

@@ -2,6 +2,7 @@ import const
 import settings
 import pandas as pd
 import numpy as np
+import random
 from src.preprocess import reform, times
 from src.feature_generators.lstm_fg import LSTMFG
 from src import util
@@ -19,12 +20,15 @@ class HybridFG(LSTMFG):
         super(HybridFG, self).__init__(cfg, time_steps)
 
         # Basic parameters
-        self.meo_steps = 24
-        self.meo_group = 3
+        self.meo_steps = 12
+        self.meo_group = 6  # 3 days ago
+        self.future_steps = 8
+        self.future_group = 6  # next 2 days
         self.air_steps = 12
-        self.air_group = 1
+        self.air_group = 1  # last 12 hours
         self.time_is_one_hot = True
         self.meo_keys = [const.TEMP, const.HUM, const.WSPD]  # [const.TEMP, const.HUM, const.WSPD]
+        self.future_keys = [const.TEMP, const.HUM, const.WSPD]
         # self.air_keys = [const.PM25]
         # self.air_keys = [const.PM25, const.PM10]  # [const.PM25, const.PM10, const.O3]
         self.air_keys = [const.PM25, const.PM10, const.O3]
@@ -44,9 +48,10 @@ class HybridFG(LSTMFG):
 
         # train / test / validation data holders
         self._context = [np.empty((0, 0))] * 3
-        self._meo = [np.empty((0, 0))] * 3
-        self._air = [np.empty((0, 0))] * 3
-        self._label = [np.empty((0, 0))] * 3
+        self._meo = [np.empty((0, 0))] * 3  # weather time series
+        self._fut = [np.empty((0, 0))] * 3  # forecast weather time series
+        self._air = [np.empty((0, 0))] * 3  # air quality time series
+        self._label = [np.empty((0, 0))] * 3  # output to be predicted
 
         # station data for context features like station location
         self._stations = pd.DataFrame()
@@ -122,6 +127,16 @@ class HybridFG(LSTMFG):
         meo_ts = np.moveaxis(np.array(meo_all), source=0, destination=2) \
             .reshape((-1, self.meo_steps * len(meo_all))).tolist()
 
+        # future weather time series of next 'future_steps' every 'future_group' hours
+        future_all = list()
+        for future_key in self.future_keys:
+            ts = times.split(time=s_time, value=s_data[future_key].tolist(),
+                             group_hours=self.future_group, step=self.future_steps, region=region,
+                             whole_group=True)
+            future_all.append(ts)
+        future_ts = np.moveaxis(np.array(future_all), source=0, destination=2) \
+            .reshape((-1, self.future_steps * len(future_all))).tolist()
+
         # air quality time series of last 'air_steps' every 'air_group' hours
         air_all = list()
         for air_key in self.air_keys:
@@ -140,7 +155,8 @@ class HybridFG(LSTMFG):
         sid = [station_id] * (len(s_time) - first_x)
 
         # aggregate all features per row
-        feature_set = [[s] + [t] + m + a + l for s, t, m, a, l in zip(sid, t, meo_ts, air_ts, label)]
+        feature_set = [[s] + [t] + m + f + a + l for s, t, m, f, a, l in
+                       zip(sid, t, meo_ts, future_ts, air_ts, label)]
 
         return feature_set
 
@@ -150,8 +166,8 @@ class HybridFG(LSTMFG):
         :param batch_size:
         :param progress: progress ratio to be used to move to next feature file chunks
         :param rotate: number of times to rotate over all chunks until progress = 1
-        :return: tuple (context, meo_ts, air_ts, label)
-        :rtype: (list, list, list, list)
+        :return: tuple (context, meo_ts, future_ts, air_ts, label)
+        :rtype: (list, list, list, list, list)
         """
         chunk_id = 1 + math.floor(rotate * progress * self.chunk_count) % self.chunk_count
         if self._current_chunk != chunk_id:
@@ -159,23 +175,23 @@ class HybridFG(LSTMFG):
             self._current_chunk = chunk_id
         index = const.TRAIN
         sample_idx = np.random.randint(len(self._context[index]), size=batch_size)
-        sample_idx[0] = 0
         context = self._context[index][sample_idx, :]
         meo_ts = self._meo[index][sample_idx, :]
+        future_ts = self._fut[index][sample_idx, :]
         air_ts = self._air[index][sample_idx, :]
         label = self._label[index][sample_idx, :]
-        return context, meo_ts, air_ts, label
+        return context, meo_ts, future_ts, air_ts, label
 
     def holdout(self, key=const.TEST):
         """
             Return test data
         :param key: key for TEST or VALID data
-        :return: tuple (context, meo_ts, air_ts, label)
-        :rtype: (list, list, list, list)
+        :return: tuple (context, meo_ts, future_ts, air_ts, label)
+        :rtype: (list, list, list, list, list)
         """
         if len(self._context[key]) == 0:
             self.load_valid_test()
-        return self._context[key], self._meo[key], self._air[key], self._label[key]
+        return self._context[key], self._meo[key], self._fut[key], self._air[key], self._label[key]
 
     def load(self, chunk_id=1):
         """
@@ -186,12 +202,9 @@ class HybridFG(LSTMFG):
         features = pd.read_csv(self._features_path + str(chunk_id) + '.csv', sep=";", low_memory=False)
         train_features = times.select(df=features, time_key=const.TIME,
                                    from_time=self.train_from, to_time=self.train_to)
-        context, meo_ts, air_ts, label = self.explode(train_features)
         index = const.TRAIN
-        self._context[index] = context
-        self._meo[index] = meo_ts
-        self._air[index] = air_ts
-        self._label[index] = label
+        self._context[index], self._meo[index], self._fut[index], self._air[index], self._label[index] \
+            = self.explode(train_features)
         print('Feature chunk {c} is prepared.'.format(c=chunk_id))
         return self
 
@@ -214,17 +227,17 @@ class HybridFG(LSTMFG):
 
             # explode features into parts (context, weather time series, etc.)
             for key in features:
-                context, meo_ts, air_ts, label = self.explode(features[key])
-                if len(self._context[key]) == 0:
-                    self._context[key] = context
-                    self._meo[key] = meo_ts
-                    self._air[key] = air_ts
-                    self._label[key] = label
-                else:
-                    self._context[key] = np.concatenate((self._context[key], context), axis=0)
-                    self._meo[key] = np.concatenate((self._meo[key], meo_ts), axis=0)
-                    self._air[key] = np.concatenate((self._air[key], air_ts), axis=0)
-                    self._label[key] = np.concatenate((self._label[key], label), axis=0)
+                context, meo_ts, future_ts, air_ts, label = self.explode(features[key])
+                self._context[key] = context if len(self._context[key]) == 0 else np.concatenate(
+                    (self._context[key], context), axis=0)
+                self._meo[key] = meo_ts if len(self._meo[key]) == 0 else np.concatenate(
+                    (self._meo[key], meo_ts), axis=0)
+                self._fut[key] = future_ts if len(self._fut[key]) == 0 else np.concatenate(
+                    (self._fut[key], future_ts), axis=0)
+                self._air[key] = air_ts if len(self._air[key]) == 0 else np.concatenate(
+                    (self._air[key], air_ts), axis=0)
+                self._label[key] = label if len(self._label[key]) == 0 else np.concatenate(
+                    (self._label[key], label), axis=0)
         print(' Hold-out feature is prepared.')
         return self
 
@@ -232,8 +245,8 @@ class HybridFG(LSTMFG):
         """
             Explode features to context, time series, and label
         :param features:
-        :return: tuple (context, meo_ts, air_ts, label)
-        :rtype: (list, list, list, list)
+        :return: tuple (context, meo_ts, future_ts, air_ts, label)
+        :rtype: (list, list, list, list, list)
         """
         if len(self._stations.index) == 0:
             self._stations = pd.read_csv(self.config[const.STATIONS], sep=";", low_memory=False)
@@ -269,13 +282,41 @@ class HybridFG(LSTMFG):
         # weather time series
         meo_ts = new_features[self.get_meo_columns()].as_matrix()
         meo_ts = util.row_to_matrix(meo_ts, split_count=self.meo_steps)
+        # forecast weather time series
+        future_ts = new_features[self.get_future_columns()].as_matrix()
+        future_ts = util.row_to_matrix(future_ts, split_count=self.future_steps)
         # air quality time series
         air_ts = new_features[self.get_air_columns()].as_matrix()
         air_ts = util.row_to_matrix(air_ts, split_count=self.air_steps)
         # label time series
         label = new_features[self.get_label_columns()].as_matrix()
 
-        return context, meo_ts, air_ts, label
+        return context, meo_ts, future_ts, air_ts, label
+
+    def shuffle(self):
+        if self.chunk_count <= 1:
+            return
+        shuffle_count = self.chunk_count
+        shuffle_counter = 0
+        for iteration in range(0, shuffle_count):
+            chunk1_id = 2 + iteration % (self.chunk_count - 1)
+            chunk2_id = random.randint(1, chunk1_id - 1)
+            print(' Shuffling files {id1} <-> {id2} ..'.format(id1=chunk1_id, id2=chunk2_id))
+            chunk1_path = self._features_path + str(chunk1_id) + '.csv'
+            chunk2_path = self._features_path + str(chunk2_id) + '.csv'
+            chunk1 = pd.read_csv(chunk1_path, sep=";", low_memory=False)
+            chunk2 = pd.read_csv(chunk2_path, sep=";", low_memory=False)
+            # merge two chunks and shuffle the merged rows
+            chunk1 = chunk1.append(other=chunk2, ignore_index=True).sample(
+                frac=1).reset_index(drop=True)
+            # save shuffled chunks
+            border = int(len(chunk1.index) / 2)
+            util.write(chunk1.ix[0:border, :], address=chunk1_path)
+            util.write(chunk1.ix[border:, :], address=chunk2_path)
+            shuffle_counter += 1
+            print(' Feature files {id1} <-> {id2} shuffled ({c} of {t})'.format(
+                id1=chunk1_id, id2=chunk2_id, c=shuffle_counter, t=shuffle_count))
+        return self
 
     def dropna(self):
         self.features = self.features.dropna(axis=0)  # drop rows containing nan values
@@ -289,6 +330,7 @@ class HybridFG(LSTMFG):
 
     def get_measured_columns(self):
         columns = self.get_meo_columns()
+        columns.extend(self.get_future_columns())
         columns.extend(self.get_air_columns())
         columns.extend(self.get_label_columns())
         return columns
@@ -297,6 +339,7 @@ class HybridFG(LSTMFG):
         # set name for columns
         columns = [const.ID, const.TIME]
         columns.extend(self.get_meo_columns())
+        columns.extend(self.get_future_columns())
         columns.extend(self.get_air_columns())
         columns.extend(self.get_label_columns())
         return columns
@@ -309,6 +352,13 @@ class HybridFG(LSTMFG):
         for i in range(1, self.meo_steps + 1):
             for meo_key in self.meo_keys:
                 columns.extend(['{k}_{i}'.format(k=meo_key, i=i)])
+        return columns
+
+    def get_future_columns(self):
+        columns = []
+        for i in range(1, self.future_steps + 1):
+            for future_key in self.future_keys:
+                columns.extend(['{k}_f_{i}'.format(k=future_key, i=i)])
         return columns
 
     def get_features(self):
@@ -344,13 +394,13 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': {
-            'PM2.5': 200000,
-            # 'PM10': -1,
-            # 'O3': 200000,
+            # 'PM2.5': 200000,
+            'PM10': True,
+            'O3': True,
             },
         'LD': {
-            # 'PM2.5': -1,
-            # 'PM10': -1,
+            'PM2.5': True,
+            'PM10': True,
             }
         }
     for city in cases:
@@ -363,8 +413,9 @@ if __name__ == "__main__":
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.POLLUTANT: pollutant,
-                const.CHUNK_COUNT: 8,
+                const.CHUNK_COUNT: 10,
             }
             fg = HybridFG(cfg=cfg, time_steps=12)
             fg.generate()
+            fg.shuffle()  # shuffle generated chunks for data uniformity in learning phase
             print(city, pollutant, "done!")
