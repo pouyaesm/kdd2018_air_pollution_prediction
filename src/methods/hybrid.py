@@ -99,7 +99,7 @@ class Hybrid(LSTM):
 
         keep_prob = tf.placeholder_with_default(1.0, (), name='dropout_keep_prob')
         is_training = tf.placeholder_with_default(False, (), name='is_training')
-        learning_rate = tf.placeholder((), name='learning_rate')
+        learning_rate = tf.placeholder_with_default(0.05, (), name='learning_rate')
 
         mlp_input = list()  # input to the last NN that outputs the final prediction
 
@@ -246,12 +246,16 @@ class Hybrid(LSTM):
     def test(self):
         model = self._model
         context, meo_ts, future_ts, air_ts, label = self._fg.holdout(key=const.TEST)
-        test_smp = self.run(model['smape'], model=model,
-                            cnx=context, meo=meo_ts, fut=future_ts, air=air_ts, lbl=label)
-        print("Testing SMAPE:", test_smp)
-        predicted_label = self.predict(x={'c': context, 'm': meo_ts, 'f': future_ts,
-                                          'a': air_ts, 'l': label})
-        self._fg.save_test(predicted_label)
+        if len(context) > 0:
+            test_smp = self.run(model['smape'], model=model,
+                                cnx=context, meo=meo_ts, fut=future_ts, air=air_ts, lbl=label)
+            station_count = len(self._fg._test[const.ID].unique())
+            print("Testing SMAPE:", test_smp, 'for', station_count, 'stations')
+            predicted_label = self.predict(x={'c': context, 'm': meo_ts, 'f': future_ts,
+                                              'a': air_ts, 'l': label})
+            self._fg.save_test(predicted_label)
+        else:
+            print("Empty hold-out set!")
         return self
 
     def predict(self, x):
@@ -263,13 +267,13 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': [
-            'PM2.5',
+            # 'PM2.5',
             # 'PM10',
             # 'O3'
         ],
         'LD': [
             # 'PM2.5',
-            # 'PM10'
+            'PM10'
         ]
     }
     # For low values of pollutants MAE works better than SMAPE!
@@ -285,12 +289,12 @@ if __name__ == "__main__":
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
                 const.TEST_FROM: '18-04-01 23',
-                const.TEST_TO: '18-04-26 23',
+                const.TEST_TO: '18-04-27 00',
                 const.LOSS_FUNCTION: const.MEAN_PERCENT,
-                const.CHUNK_COUNT: 10,
-                const.ROTATE: 10,
+                const.CHUNK_COUNT: 10 if city == const.BJ else 4,
+                const.ROTATE: 5,
                 const.TIME_STEPS: 12,
-                const.EPOCHS: 10000,
+                const.EPOCHS: 2500,
                 const.BATCH_SIZE: 2000
             }
             hybrid = Hybrid(cfg).train().save_model()

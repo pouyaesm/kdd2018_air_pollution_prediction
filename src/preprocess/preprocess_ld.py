@@ -86,9 +86,6 @@ class PreProcessLD(PreProcess):
         aq_stations[const.PREDICT] = (1 - aq_stations[const.PREDICT].isna()).astype(int)
         self.stations = aq_stations
 
-        # set unique station ids temporary for filling iteration
-        self.stations[const.ID] = self.obs[const.ID].unique()
-
         # Sort data
         self.sort()
 

@@ -31,7 +31,10 @@ class HybridFG(LSTMFG):
         self.future_keys = [const.TEMP, const.HUM, const.WSPD]
         # self.air_keys = [const.PM25]
         # self.air_keys = [const.PM25, const.PM10]  # [const.PM25, const.PM10, const.O3]
-        self.air_keys = [const.PM25, const.PM10, const.O3]
+        if cfg[const.CITY] == const.BJ:
+            self.air_keys = [const.PM25, const.PM10, const.O3]
+        else:
+            self.air_keys = [const.PM25, const.PM10]  # no O3 for london
 
         features_base_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + str(self.time_steps)
         self._features_path = features_base_path + '_hybrid_'
@@ -79,10 +82,13 @@ class HybridFG(LSTMFG):
         start_time = time.time()
         stations = self._stations.to_dict(orient='index')
         chunk_index = np.linspace(start=0, stop=len(stations) - 1, num=self.chunk_count + 1)
+        station_count = self._stations[const.PREDICT].sum()
+        processed_stations = 0
         next_chunk = 1
         total_data_points = 0
         for s_index, s_info in stations.items():
-            if s_info[const.PREDICT] != 1: continue
+            if s_info[const.PREDICT] != 1:
+                continue
             station_id = s_info[const.ID]
             if verbose:
                 print(' Features of {sid} ({index} of {len})..'.
@@ -93,8 +99,9 @@ class HybridFG(LSTMFG):
             station_features = self.generate_per_station(station_id, s_data, s_time, first_x)
             # aggregate all features per row
             features.extend(station_features)
+            processed_stations += 1
             # save current chunk and go to next
-            if save and s_index >= chunk_index[next_chunk]:
+            if save and (s_index >= chunk_index[next_chunk] or processed_stations == station_count):
                 # set and save the chunk of features
                 self.features = pd.DataFrame(data=features, columns=self.get_all_columns())
                 self.dropna().save_features(chunk_id=next_chunk)
@@ -107,8 +114,7 @@ class HybridFG(LSTMFG):
         if not save:
             self.features = pd.DataFrame(data=features, columns=self.get_all_columns())
 
-        print(total_data_points, 'feature vectors generated in',
-              time.time() - start_time, 'secs')
+        print(' Feature vectors generated in', time.time() - start_time, 'secs')
         return self
 
     def generate_per_station(self, station_id, s_data, s_time, first_x):
@@ -228,6 +234,8 @@ class HybridFG(LSTMFG):
             # explode features into parts (context, weather time series, etc.)
             for key in features:
                 context, meo_ts, future_ts, air_ts, label = self.explode(features[key])
+                if len(context) == 0:
+                    continue
                 self._context[key] = context if len(self._context[key]) == 0 else np.concatenate(
                     (self._context[key], context), axis=0)
                 self._meo[key] = meo_ts if len(self._meo[key]) == 0 else np.concatenate(
@@ -294,9 +302,7 @@ class HybridFG(LSTMFG):
         return context, meo_ts, future_ts, air_ts, label
 
     def shuffle(self):
-        if self.chunk_count <= 1:
-            return
-        shuffle_count = self.chunk_count
+        shuffle_count = self.chunk_count - 1
         shuffle_counter = 0
         for iteration in range(0, shuffle_count):
             chunk1_id = 2 + iteration % (self.chunk_count - 1)
@@ -394,9 +400,9 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': {
-            # 'PM2.5': 200000,
-            'PM10': True,
-            'O3': True,
+            # 'PM2.5': True,
+            # 'PM10': True,
+            # 'O3': True,
             },
         'LD': {
             'PM2.5': True,
@@ -413,7 +419,7 @@ if __name__ == "__main__":
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.POLLUTANT: pollutant,
-                const.CHUNK_COUNT: 10,
+                const.CHUNK_COUNT: 10 if city == const.BJ else 4,
             }
             fg = HybridFG(cfg=cfg, time_steps=12)
             fg.generate()
