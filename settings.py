@@ -2,7 +2,7 @@
 import configparser
 import os
 
-config = configparser.ConfigParser()
+config = configparser.RawConfigParser()
 setup_path = os.path.dirname(os.path.realpath(__file__))
 config.read(setup_path + '\\config.ini')
 

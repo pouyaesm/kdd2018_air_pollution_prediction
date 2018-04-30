@@ -29,11 +29,11 @@ def generate():
                 const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
                 const.LOSS_FUNCTION: const.MEAN_PERCENT,
-                const.TEST_FROM: '18-04-01 00',
-                const.TEST_TO: '18-04-26 00',
-                # const.TEST_FROM: '18-04-19 23',
-                # const.TEST_TO: '18-04-20 00',
-                const.CHUNK_COUNT: 10 if city == const.BJ else 2,
+                # const.TEST_FROM: '18-04-01 00',
+                # const.TEST_TO: '18-04-26 00',
+                const.TEST_FROM: '18-04-24 23',
+                const.TEST_TO: '18-04-25 00',
+                const.CHUNK_COUNT: 10 if city == const.BJ else 4,
                 const.TIME_STEPS: 12
             }
             # LSTM(cfg, time_steps=48).load_model().test()

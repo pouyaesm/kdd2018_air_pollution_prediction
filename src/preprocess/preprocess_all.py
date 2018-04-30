@@ -17,6 +17,7 @@ config_bj = {
     const.STATIONS: config[const.BJ_STATIONS],
     const.GRID_DATA: config[const.BJ_GRID_DATA],
     const.GRID_LIVE: config[const.BJ_GRID_LIVE],
+    const.GRID_FORECAST: config[const.BJ_GRID_FORECAST],
     const.GRIDS: config[const.BJ_GRIDS]
 }
 
@@ -30,6 +31,7 @@ config_ld = {
     const.STATIONS: config[const.LD_STATIONS],
     const.GRID_DATA: config[const.LD_GRID_DATA],
     const.GRID_LIVE: config[const.LD_GRID_LIVE],
+    const.GRID_FORECAST: config[const.LD_GRID_FORECAST],
     const.GRIDS: config[const.LD_GRIDS]
 }
 

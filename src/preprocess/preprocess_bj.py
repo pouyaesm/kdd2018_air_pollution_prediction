@@ -6,6 +6,7 @@ import numpy as np
 import requests
 from src import util
 from src.preprocess.preprocess import PreProcess
+from src.preprocess import external
 
 
 class PreProcessBJ(PreProcess):
@@ -25,9 +26,11 @@ class PreProcessBJ(PreProcess):
         aq_url = "https://biendata.com/competition/airquality/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
         meo_url = "https://biendata.com/competition/meteorology/bj/2018-02-01-0/2018-06-01-0/2k0d1d8"
         aq_live = pd.read_csv(io.StringIO(util.download(aq_url)))
-        print('Live aQ has been read, count:', len(aq_live))
+        print(' Live aQ has been read, count:', len(aq_live.index))
+        aq_latest = external.get_beijing_aq_latest()
+        print(' Latest aQ has been read, count:', len(aq_latest.index))
         meo_live = pd.read_csv(io.StringIO(util.download(meo_url)))
-        print('Live meO has been read, count:', len(meo_live))
+        print(' Live meO has been read, count:', len(meo_live.index))
 
         # Make live data columns compatible with offline data
         aq_live.rename(columns={col: col.split('_Concentration')[0] for col in aq_live.columns}, inplace=True)
@@ -35,6 +38,10 @@ class PreProcessBJ(PreProcess):
         aq_live.drop(columns=['id'], inplace=True)
         meo_live.rename(columns={'time': const.TIME}, inplace=True)
         meo_live.drop(columns=['id'], inplace=True)
+
+        # Merge aq_live with aq_latest
+        aq_live = aq_live.append(other=aq_latest, ignore_index=True)
+        aq_live.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
 
         return aq_live, meo_live
 

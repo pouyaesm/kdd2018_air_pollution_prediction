@@ -3,8 +3,10 @@ from src import util
 import pandas as pd
 import numpy as np
 import time
-import requests
+from datetime import datetime
+from datetime import timedelta
 import io
+import os
 
 
 class PreProcess:
@@ -26,6 +28,27 @@ class PreProcess:
         self.obs = observed
         self.stations = stations
         return self
+
+    def get_forecast_grid(self, city_code):
+        """
+        :param city_code: 'bj' or 'ld'
+        :return:
+        :rtype: pandas.DataFrame
+        """
+        template = "http://kdd.caiyunapp.com/competition/forecast/%s/2018-%s-%s-%s/2k0d1d8"
+        dt = datetime.utcnow()
+        while True:
+            # url prepared for a given UTC time
+            url = template % (city_code, dt.month, dt.day, dt.hour)
+            forecast = pd.read_csv(io.StringIO(util.download(url)))
+            if len(forecast) > 0:
+                forecast.rename(columns={'forecast_time': const.TIME, 'station_id': const.GID}, inplace=True)
+                forecast.drop(columns=['id'], inplace=True)
+                print(' Forecast grid data fetched from', dt.strftime(const.T_FORMAT))
+                break
+            else:  # if no data found at current UTC time try one hour before until data is available
+                dt = dt - timedelta(hours=1)
+        return forecast
 
     def get_live(self):
         return None
@@ -121,24 +144,48 @@ class PreProcess:
 
         # Read huge grid data part by part
         iterator = pd.read_csv(self.config[const.GRID_DATA], iterator=True, low_memory=False,
-                               chunksize=2000000, float_precision='round_trip')
+                               chunksize=1500000, float_precision='round_trip')
 
-        def merge(grid_chunk):
+        def merge(observed, grid_chunk):
             # Join observed * station_grid * grid
             grid_chunk.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
             grid_chunk[const.TIME] = pd.to_datetime(grid_chunk[const.TIME], utc=True)
-            self.obs = self.obs.merge(right=grid_chunk, how='left', on=[const.GID, const.TIME],
+            observed = observed.merge(right=grid_chunk, how='left', on=[const.GID, const.TIME],
                                       suffixes=['_obs', '_grid'])
             # Merge observed and grid shared columns into one main column
-            self.obs = util.merge_columns(self.obs, main='_obs', auxiliary='_grid')
+            observed = util.merge_columns(observed, main='_obs', auxiliary='_grid')
+            return observed
 
-        for i, chunk in enumerate(iterator):
-            print(' merge grid chunk {c}..'.format(c=i + 1))
-            merge(chunk)
+        # Merge grid forecast data with observed
+        grid_forecast = pd.read_csv(self.config[const.GRID_FORECAST], sep=';', low_memory=False)
+        # Create a table of (station_id, time, grid_id)
+        # since observed data has no time corresponding to forecast grid data
+        station_ids = list()
+        grid_ids = list()
+        times = list()
+        for _, s_info in self.stations.iterrows():
+            for t in grid_forecast[const.TIME].unique():
+                station_ids.append(s_info[const.ID])
+                grid_ids.append(s_info[const.GID])
+                times.append(t)
+        obs_forecast = pd.DataFrame(
+            data={const.ID: station_ids, const.TIME: times, const.GID: grid_ids},
+            columns=self.obs.columns)
+        obs_forecast[const.TIME] = pd.to_datetime(obs_forecast[const.TIME], utc=True)
+        obs_forecast = merge(obs_forecast, grid_forecast)
+        self.obs = self.obs.append(other=obs_forecast, ignore_index=True)
 
         # Append grid live loaded offline
         grid_live = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
-        merge(grid_live)
+        self.obs = merge(self.obs, grid_live)
+
+        # Merge historical grid data chunks with observed data
+        for i, chunk in enumerate(iterator):
+            print(' merge grid chunk {c}..'.format(c=i + 1))
+            self.obs = merge(self.obs, chunk)
+
+        # remove possible duplicates due to forecast-live-history data overlap
+        self.obs.drop_duplicates(subset=[const.ID, const.TIME])
 
         # Drop position and grid_id in observed data
         self.obs.drop(columns=[const.LONG, const.LAT, const.GID], inplace=True)
@@ -148,12 +195,13 @@ class PreProcess:
 
         return self
 
-    def get_live_grid(self):
+    def get_live_grid(self, time_from: datetime):
         """
             Load live observed data from KDD APIs
         :return:
         """
-        grid_live = pd.read_csv(io.StringIO(util.download(self.config[const.GRID_URL])))
+        url = self.config[const.GRID_URL] % (time_from.month, time_from.day, time_from.hour)
+        grid_live = pd.read_csv(io.StringIO(util.download(url)))
         print('Live Grid has been read, count:', len(grid_live))
         # Rename fields to be compatible with offline data
         grid_live.rename(columns={
@@ -163,10 +211,31 @@ class PreProcess:
 
         return grid_live
 
-    def fetch_save_live_grid(self):
-        grid_live = self.get_live_grid()
+    def fetch_save_live_grid(self, city_code):
+        # read live data with 3 days overlap to have least missing values
+        saved = None
+        if os.path.isfile(self.config[const.GRID_LIVE]):
+            saved = pd.read_csv(self.config[const.GRID_LIVE], sep=';', low_memory=False)
+            latest_time_saved = pd.to_datetime(saved[const.TIME]).max() - timedelta(days=2)
+        else:
+            latest_time_saved = datetime(year=2018, month=1, day=1)
+
+        grid_live = self.get_live_grid(time_from=latest_time_saved)
+        if saved is not None:
+            grid_live = grid_live.append(other=saved, ignore_index=True, verify_integrity=True)
+            size = len(grid_live.index)
+            grid_live.drop_duplicates(subset=[const.GID, const.TIME], inplace=True)
+            print(' %d records overlap between live and saved' % (size - len(grid_live.index)))
+
+        grid_forecast = self.get_forecast_grid(city_code=city_code)
+
+        # sort dataframes for readability
+        grid_live.sort_values(by=[const.GID, const.TIME], inplace=True)
+        grid_forecast.sort_values(by=[const.GID, const.TIME], inplace=True)
+
         grid_live.to_csv(self.config[const.GRID_LIVE], sep=';', index=False)
-        print('Grid data fetched and saved.')
+        grid_forecast.to_csv(self.config[const.GRID_FORECAST], sep=';', index=False)
+        print(' Grid live / forecast data fetched and saved.')
         return self
 
     def save(self, append=False):

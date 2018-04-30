@@ -36,7 +36,8 @@ class HybridFG(LSTMFG):
         else:
             self.air_keys = [const.PM25, const.PM10]  # no O3 for london
 
-        features_base_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + str(self.time_steps)
+        features_base_path = self.config.get(const.FEATURE_DIR, "") + \
+                             self.config.get(const.FEATURE, "") + str(self.time_steps)
         self._features_path = features_base_path + '_hybrid_'
 
         self._test_path = features_base_path + '_hybrid_tests.csv'
@@ -368,6 +369,10 @@ class HybridFG(LSTMFG):
         return columns
 
     def get_features(self):
+        """
+        :return:
+        :rtype: pandas.DataFrame
+        """
         return self.features
 
     def get_air_columns(self):

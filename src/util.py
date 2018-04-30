@@ -200,9 +200,9 @@ def reverse(matrix: np.ndarray, axis=1):
 
 
 def download(url):
+    print(' downloading %s' % url)
     response = requests.get(url, stream=True)
     total_length = response.headers.get('content-length')
-
     if total_length is None:  # no content length header
         return response.content.decode('utf-8')
     else:
