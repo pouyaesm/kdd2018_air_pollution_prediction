@@ -25,7 +25,7 @@ class LSTM(Model):
         self._session = tf.Session()
         self._model = dict()  # contains different points in a tensorflow computation graph
         self._fg = self._fg = LSTMFG({
-                const.FEATURE_DIR: self.config[const.FEATURE_DIR],
+                const.FEATURE_DIR: self.config.get(const.FEATURE_DIR, ""),
                 const.FEATURE: self.config[const.FEATURE],
         }, time_steps=self.time_steps)
         # Path to save and restore the model

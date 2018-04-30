@@ -33,7 +33,7 @@ class HybridFG(LSTMFG):
         # self.air_keys = [const.PM25, const.PM10]  # [const.PM25, const.PM10, const.O3]
         if cfg[const.CITY] == const.BJ:
             self.air_keys = [const.PM25, const.PM10, const.O3]
-        else:
+        elif cfg[const.CITY] == const.LD:
             self.air_keys = [const.PM25, const.PM10]  # no O3 for london
 
         features_base_path = self.config.get(const.FEATURE_DIR, "") + \

@@ -23,13 +23,13 @@ class Hybrid(LSTM):
         super(Hybrid, self).__init__(cfg, self.time_steps)
         self._fg = self._fg = HybridFG(cfg={
             const.CITY: cfg[const.CITY],
-            const.FEATURE_DIR: cfg[const.FEATURE_DIR],
+            const.FEATURE_DIR: cfg.get(const.FEATURE_DIR, ""),
             const.FEATURE: cfg[const.FEATURE],
             const.STATIONS: cfg[const.STATIONS],
             const.POLLUTANT: cfg[const.POLLUTANT],
             const.CHUNK_COUNT: cfg.get(const.CHUNK_COUNT, 1),
-            const.TEST_FROM: cfg[const.TEST_FROM],
-            const.TEST_TO: cfg[const.TEST_TO],
+            const.TEST_FROM: cfg.get(const.TEST_FROM, ''),
+            const.TEST_TO: cfg.get(const.TEST_TO, ''),
         }, time_steps=self.time_steps)
         # Path to save and restore the model
         self._model_path = self.config[const.MODEL_DIR] + \
