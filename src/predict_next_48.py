@@ -23,26 +23,22 @@ cases = {
     }
 }
 
+model_basic_cfg = {
+    const.MODEL_DIR: config[const.MODEL_DIR],
+    const.FEATURE: None,
+    const.STATIONS: None,
+    const.POLLUTANT: None,
+    const.LOSS_FUNCTION: const.MEAN_PERCENT,
+    const.CHUNK_COUNT: 10,
+    const.TIME_STEPS: 12
+}
+
 model_cfgs = {
     'BJ': {
         const.CITY: const.BJ,
-        const.MODEL_DIR: config[const.MODEL_DIR],
-        const.FEATURE: None,
-        const.STATIONS: None,
-        const.POLLUTANT: None,
-        const.LOSS_FUNCTION: const.MEAN_PERCENT,
-        const.CHUNK_COUNT: 10,
-        const.TIME_STEPS: 12
     },
     'LD': {
         const.CITY: const.LD,
-        const.MODEL_DIR: config[const.MODEL_DIR],
-        const.FEATURE: None,
-        const.STATIONS: None,
-        const.POLLUTANT: None,
-        const.LOSS_FUNCTION: const.MEAN_PERCENT,
-        const.CHUNK_COUNT: 4,
-        const.TIME_STEPS: 12
     }
 }
 today = times.to_datetime(datetime.utcnow().date())
@@ -59,20 +55,23 @@ for city, pollutants in cases.items():
     observed = pd.read_csv(config[getattr(const, city + "_OBSERVED")], sep=';', low_memory=True)
     stations = pd.read_csv(config[getattr(const, city + "_STATIONS")], sep=';', low_memory=True)
     # keep only a necessary time range for feature generation for only predictable stations
-    observed = times.select(df=observed, time_key=const.TIME, from_time='18-04-15 00')
-    # stations_to_predict = stations.loc[stations[const.PREDICT] == 1, const.ID].tolist()
-    # observed = observed.loc[observed[const.ID].isin(stations_to_predict), :]
+    observed = times.select(df=observed, time_key=const.TIME, from_time='18-04-01 00')
     observed[const.TIME] = pd.to_datetime(observed[const.TIME], format=const.T_FORMAT)
-    model_cfg = model_cfgs[city]
-    model_cfg[const.STATIONS] = config[getattr(const, city + '_STATIONS')]
+
     # # Fill all remaining null values that were to wide to be filled in general pre-processing
     # nan_rows = pd.isnull(observed[const.PM25]).sum()
     # pre_process = PreProcess().fill(observed=observed, stations=stations)
     # observed = pre_process.get_observed()
     # print('Nan PM2.5 before {b} and after {a} filling'.format(
     #     b=nan_rows, a=pd.isnull(observed[const.PM25]).sum()))
+
+    # Model configuration (city dependant)
+    model_cfg = model_cfgs[city]
+    model_cfg.update(model_basic_cfg)
+    model_cfg[const.STATIONS] = config[getattr(const, city + '_STATIONS')]
+
     for pollutant in pollutants:
-        fg = HybridFG( time_steps=0, cfg={const.CITY: city, const.POLLUTANT: pollutant})
+        fg = HybridFG(cfg={const.CITY: city, const.POLLUTANT: pollutant})
         # generate features to predict the pollutant on next 48 hours
         features = fg.generate(ts=observed, stations=stations, verbose=False, save=False).get_features()
 

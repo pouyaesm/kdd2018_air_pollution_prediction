@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+import numpy as np
 import numpy.testing as np_test
 import pandas.util.testing as pd_test
 from src.preprocess import times
@@ -106,22 +107,22 @@ class UtilTest(unittest.TestCase):
     def test_running_average():
         # test averaging values backward or forward from a given value and given hours unit
         yr = '2018-01-01 '
-        time = pd.to_datetime([yr + ' 12', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
-        value = [2, 3, 4, 5]
+        time = pd.to_datetime([yr + ' 12', yr + ' 13', yr + ' 15', yr + '16', yr + '17'], utc=True).tolist()
+        value = [2, np.nan, 3, 4, 5]
         # expected to forward-average values into 12:00 and 15:00 (unit: 3 hours)
         forward_averaged = times.running_average(time=time, value=value, group_hours=3)
-        np_test.assert_array_equal(x=[2, 3, 3.5, 4], y=forward_averaged)
+        np_test.assert_array_equal(x=[2, 2, 3, 3.5, 4], y=forward_averaged)
         # expected to backward-average
         backward_averaged = times.running_average(time=time, value=value, group_hours=3, direction=-1)
-        np_test.assert_array_equal(x=[2, 4, 4.5, 5], y=backward_averaged)
+        np_test.assert_array_equal(x=[2, 0, 4, 4.5, 5], y=backward_averaged)
         # put whole group average for each member
         whole_averaged = times.running_average(time=time, value=value, group_hours=3, whole_group=True)
-        np_test.assert_array_equal(x=[2, 4, 4, 4], y=whole_averaged)
+        np_test.assert_array_equal(x=[2, 2, 4, 4, 4], y=whole_averaged)
 
     def test_group_average(self):
         yr = '2018-01-01 '
-        time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '18'], utc=True).tolist()
-        value = [2, 3, 4, 5, 6]
+        time = pd.to_datetime([yr + ' 13', yr + '14', yr + ' 15', yr + '16', yr + '17', yr + '18'], utc=True).tolist()
+        value = [2, 3, 4, np.nan, 5, 6]
         expected_group_time = pd.to_datetime([yr + ' 12', yr + '15', yr + ' 18'], utc=True).tolist()
         group_time, group_average, lookup, count = times.group_average(time=time, value=value, group_hours=3)
         # time groups: 12:00, 15:00, and 18:00

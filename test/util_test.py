@@ -45,7 +45,7 @@ class UtilTest(unittest.TestCase):
         series = pd.Series([np.nan, 1, np.nan, np.nan, 3, np.nan, np.nan, np.nan, 5, np.nan],
                            index=[10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
         util.fill(series, max_interval=2, inplace=True)
-        expected = pd.Series([1.0, 1.0, 2.0, 2.0, 3.0, np.nan, np.nan, np.nan, 5.0, 5.0],
+        expected = pd.Series([1.0, 1.0, 1.0, 2.0, 3.0, np.nan, np.nan, np.nan, 5.0, 5.0],
                              index=[10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
         pd_test.assert_series_equal(series, expected)
 
@@ -113,10 +113,3 @@ class UtilTest(unittest.TestCase):
         reversed_column = util.reverse(matrix, axis=1)
         np_test.assert_array_equal(x=[[2, 1], [4, 3]], y=reversed_column)
         np_test.assert_array_equal(x=[[3, 4], [1, 2]], y=reversed_row)
-
-    @staticmethod
-    def test_one_hot():
-        columns = ['1', '2', '3', '4']
-        s = pd.Series(data=[1, 2, 4])
-        one_hot = util.one_hot(series=s, columns=columns)
-        np_test.assert_array_equal(x=[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]], y=one_hot)

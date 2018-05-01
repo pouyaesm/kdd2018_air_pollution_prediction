@@ -56,9 +56,10 @@ def fill(series: pd.Series, max_interval=0, inplace=False):
                 # this happens when a series starts or ends with a NaN
                 first_value = last_value if np.isnan(first_value) else first_value
                 last_value = first_value if np.isnan(last_value) else last_value
-                # Set average of boundaries for the NaN interval
-                filled.values[start:end + 1] = \
-                    [(first_value + last_value) / 2] * (end - start + 1)
+                # Set NaN interval by monotonically moving from first boundary value to last
+                d = end - start + 1
+                for i in range(0, d):
+                    filled.values[start + i] = ((d - i) * first_value + i * last_value) / d
             # Reset NaN interval indicators
             region[0] = region[1] = -1
 
@@ -215,8 +216,4 @@ def download(url):
             done = int(50 * downloaded / total_length)
             print("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
         return content
-
-
-def one_hot(series: pd.Series, columns):
-    return pd.get_dummies(series, columns=columns).T.reindex(columns).T.fillna(0)
 

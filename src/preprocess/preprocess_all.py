@@ -37,7 +37,7 @@ config_ld = {
 
 do_bj = True
 do_ld = True
-max_interval = 0
+max_interval = 24
 if do_bj:
     print('Processing beijing..')
     pre_process_bj = PreProcessBJ(config_bj).process().append_grid().fill(max_interval=max_interval)

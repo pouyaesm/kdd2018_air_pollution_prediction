@@ -166,17 +166,20 @@ def running_average(time: list, value: list, group_hours: int, direction = 1, wh
             i = size - index - 1 if index < size else 0
         if index < size:
             t_group = round_hour(time[i], group_hours)  # round time to 'hours' unit
-
-            aggregate[t_group] = aggregate[t_group] + value[i] \
-                if t_group in aggregate else value[i]
-            count[t_group] = count[t_group] + 1 if t_group in count else 1
+            v = 0
+            add = 0
+            if value[i] is not np.nan:
+                v = value[i]
+                add = 1
+            aggregate[t_group] = aggregate[t_group] + v if t_group in aggregate else v
+            count[t_group] = count[t_group] + add if t_group in count else add
             if not whole_group:
                 # put average of group util index for element in this position
-                run_average[i] = aggregate[t_group] / count[t_group]
+                run_average[i] = aggregate[t_group] / max(count[t_group], 1)
 
         if whole_group and (t_group != t_group_pre or index == size):
             # put average of whole group for all elements
-            average = aggregate[t_group_pre] / count[t_group_pre]
+            average = aggregate[t_group_pre] / max(count[t_group_pre], 1)
             if direction > 0:
                 run_average[start_index:i] = [average] * (i - start_index)
             else:
@@ -217,8 +220,9 @@ def group_average(time: list, value: list, group_hours: int):
             group_time.append(t_group)
             group_lookup[t_group] = group_index
             t_group_pre = t_group
-        aggregate[group_index] = aggregate[group_index] + value[i]
-        count[group_index] += 1
+        if value[i] is not np.nan:
+            aggregate[group_index] = aggregate[group_index] + value[i]
+            count[group_index] += 1
 
     for i in range(0, len(aggregate)):
         aggregate[i] = aggregate[i] / count[i] if count[i] > 0 else 0

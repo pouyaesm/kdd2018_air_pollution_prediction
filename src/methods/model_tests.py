@@ -1,7 +1,7 @@
 import settings
 import const
 from src.methods.hybrid import Hybrid
-
+from src.feature_generators.hybrid_fg import HybridFG
 
 def generate():
     config = settings.config[const.DEFAULT]
@@ -31,13 +31,13 @@ def generate():
                 const.LOSS_FUNCTION: const.MEAN_PERCENT,
                 # const.TEST_FROM: '18-04-01 00',
                 # const.TEST_TO: '18-04-26 00',
-                const.TEST_FROM: '18-04-24 23',
-                const.TEST_TO: '18-04-25 00',
-                const.CHUNK_COUNT: 10 if city == const.BJ else 4,
-                const.TIME_STEPS: 12
+                # const.TEST_FROM: '18-04-24 23',
+                # const.TEST_TO: '18-04-25 00',
+                const.TEST_FROM: '18-04-01 23',
+                const.TEST_TO: '18-04-29 00',
             }
             # LSTM(cfg, time_steps=48).load_model().test()
-            Hybrid(cfg).load_model(mode='best').test()
+            Hybrid(cfg.update(HybridFG.get_size_config(city=city))).load_model(mode='best').test()
             print(city, pollutant, 'done!')
 
 
