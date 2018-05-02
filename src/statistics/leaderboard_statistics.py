@@ -10,7 +10,7 @@ json_file = open(config[const.LEADERBOARD_JSON])
 json_data = json.loads(json_file.read())
 
 valid_month = 4  # month to be considered for scores
-start_day = 24  # day to start averaging scores
+start_day = 27  # day to start averaging scores
 
 # decode A2018_4_11 into month: 4, and day: 11
 # and find the last day
@@ -42,7 +42,7 @@ for t in range(1, team_count + 1):
 team_rank = list()
 team_name = list()
 team_score = list()
-rank = 1
+rank = 0
 for team, score in sorted(score.items(), key=lambda item: (item[1], item[0])):
     team_rank.append(rank)
     team_name.append(team)

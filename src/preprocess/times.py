@@ -414,6 +414,14 @@ def round_hour(time: datetime, hours):
 
 def select(df: pd.DataFrame, time_key,
            from_time='00-00-00 00', to_time='99-01-01 00'):
+    """
+    :param df:
+    :param time_key:
+    :param from_time:
+    :param to_time:
+    :return:
+    :rtype: pandas.DataFrame
+    """
     filter_index = (df[time_key] >= from_time) & (df[time_key] < to_time)
     return df.loc[filter_index, :].reset_index(drop=True)
 

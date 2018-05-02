@@ -125,6 +125,7 @@ class HybridFG(LSTMFG):
 
         if not save:
             self.features = pd.DataFrame(data=features, columns=self.get_all_columns())
+            total_data_points = len(self.features)
 
         print(total_data_points, 'feature vectors generated in', time.time() - start_time, 'secs')
         return self
@@ -476,8 +477,8 @@ if __name__ == "__main__":
     cases = {
         'BJ': {
             # 'PM2.5': True,
-            'PM10': True,
-            'O3': True,
+            # 'PM10': True,
+            # 'O3': True,
             },
         'LD': {
             'PM2.5': True,

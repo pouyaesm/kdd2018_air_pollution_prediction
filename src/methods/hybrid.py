@@ -62,13 +62,11 @@ class Hybrid(LSTM):
             # input layer
             # batch normalizing aggregated inputs makes them comparable with 0.01-0.02 better SMAPE
             layer = NN.batch_norm(input=x, is_training=is_training_holder, scope=scope + '_bn_1')
-            # hidden layer 1 (2 * output size)
-            # going through a larger layer larger than output gives an effective
-            # model capacity boost which is essential!
+            # hidden layer
             # Deeper networks cannot be trained effectively here
             layer = tf.nn.relu(NN.linear(input_d, output_d, 'hid1', input=layer))
-            # 1) Adding batch normalization between (last hidden and output) causes slow improvement
-            #  and high accuracy instability among (train, valid, test) even after O(100) epochs
+            # 1) Adding batch normalization between (last hidden and output) caused slow improvement
+            #  and accuracy instability for train and / or test data
             # 2) More than one layer worsens best SMAPE 0.1
             # output layer
             layer = NN.linear(output_d, output_d, 'out', input=layer)
@@ -189,7 +187,7 @@ class Hybrid(LSTM):
             # SMAPE(dropout = 0.5) - SMAPE(dropout = 0.66) ~ 0.07 !
             # Therefore, with dropout = 0.5, output is deprived of critical input information
             # Dropout = 0.75 tends toward over-fitting less chance to find good local
-            self.run(model['train_step'], model=model, x=train, kp=0.66, train=True, lr=learning_rate)
+            self.run(model['train_step'], model=model, x=train, kp=0.68, train=True, lr=learning_rate)
             # record network summary
             summary = self.run(model['summary'], model=model, x=train)
             summary_writer.add_summary(summary, i)
@@ -265,12 +263,12 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': [
-            'PM2.5',
-            'PM10',
-            'O3'
+            # 'PM2.5',
+            # 'PM10',
+            # 'O3'
         ],
         'LD': [
-            'PM2.5',
+            # 'PM2.5',
             'PM10'
         ]
     }
@@ -297,7 +295,7 @@ if __name__ == "__main__":
                 const.EPOCHS: 2500,
                 # Batch size 2.5K may land in a bad optima, 5k also may be bad
                 # but 4k is considerably robust!
-                const.BATCH_SIZE: 4000
+                const.BATCH_SIZE: 3500
             }
             cfg.update(HybridFG.get_size_config(city=city))  # configuration of feature sizes
             hybrid = Hybrid(cfg).train().save_model()
