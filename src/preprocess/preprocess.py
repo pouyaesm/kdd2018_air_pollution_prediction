@@ -224,6 +224,7 @@ class PreProcess:
         if saved is not None:
             grid_live = grid_live.append(other=saved, ignore_index=True, verify_integrity=True)
             size = len(grid_live.index)
+            # Keep the live values on duplicate to override the forecast saved previously with real
             grid_live.drop_duplicates(subset=[const.GID, const.TIME], inplace=True)
             print(' %d records overlap between live and saved' % (size - len(grid_live.index)))
 

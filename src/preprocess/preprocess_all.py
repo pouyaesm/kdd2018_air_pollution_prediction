@@ -2,6 +2,7 @@ import const
 import settings
 from src.preprocess.preprocess_bj import PreProcessBJ
 from src.preprocess.preprocess_ld import PreProcessLD
+from src.preprocess import preprocess_live
 
 config = settings.config[const.DEFAULT]
 
@@ -35,6 +36,10 @@ config_ld = {
     const.GRIDS: config[const.LD_GRIDS]
 }
 
+# fetch and save live data
+preprocess_live.fetch()
+
+# process all data
 do_bj = True
 do_ld = True
 max_interval = 24

@@ -102,6 +102,7 @@ class Hybrid(HybridBase):
             # Feed the pollutant placeholder to that its pre-trained predictor
             # Get the output of pre-trained graph
             prediction = lstm_pre.get_model()['predictor']
+            # Pre-trained graph is kept to fed required data to its placeholders
             self.pre_trained[pollutant] = lstm_pre
             # Do not update weights of LSTM that is trained to predict the output directly
             # during the mixed (tostal) training phase,
@@ -229,13 +230,13 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': [
-            # 'PM2.5',
+            'PM2.5',
             # 'PM10',
             # 'O3'
         ],
         'LD': [
             # 'PM2.5',
-            'PM10'
+            # 'PM10'
         ]
     }
     # For low values of pollutants MAE works better than SMAPE!
@@ -260,7 +261,7 @@ if __name__ == "__main__":
                 # Change it until get a similar accuracy for train and test
                 const.DROPOUT: 0.55,
                 # more rotates prevents the model from over-fitting on sub-data
-                const.ROTATE: 5 if city == const.BJ else 15,
+                const.ROTATE: 6 if city == const.BJ else 15,
                 const.EPOCHS: 2500,
                 const.BATCH_SIZE: 1500
             }

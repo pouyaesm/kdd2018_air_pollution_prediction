@@ -40,13 +40,13 @@ model_cfgs = {
     }
 }
 today = times.to_datetime(datetime.utcnow().date())
-# tomorrow
-date_border = times.to_datetime(today + timedelta(days=1))
-# # 2 days before
-# date_border = times.to_datetime(today - timedelta(days=2))
+# # tomorrow
+# date_border = times.to_datetime(today + timedelta(days=1))
+# 2 days before
+date_border = times.to_datetime(today - timedelta(days=2))
 now = datetime.utcnow()
 
-print('Date border:', date_border.strftime(const.T_FORMAT_FULL))
+print('Date border:', (date_border - timedelta(hours=1)).strftime(const.T_FORMAT_FULL))
 
 outputs = list()
 smape_total = 0
@@ -127,5 +127,6 @@ if date_border <= today:
     print('Total SMAPE', smape_total / smape_count)
 
 df = pd.DataFrame(data=results, columns=['test_id', 'PM2.5', 'PM10', 'O3'])
-submit_path = config[const.SUBMIT_DIR] + "result_" + today.strftime("%Y_%m_%d") + ".csv"
+submit_path = config[const.SUBMIT_DIR] + "result_" + \
+              (date_border - timedelta(hours=1)).strftime("%Y_%m_%d") + ".csv"
 df.to_csv(submit_path, sep=',', index=False, float_format='%.3f')
