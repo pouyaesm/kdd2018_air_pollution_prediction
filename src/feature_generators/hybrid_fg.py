@@ -35,31 +35,22 @@ class HybridFG(LSTMFG):
 
         self.meo_keys = [const.TEMP, const.HUM, const.WSPD]  # [const.TEMP, const.HUM, const.WSPD]
         self.future_keys = [const.TEMP, const.HUM, const.WSPD]
-        # self.air_keys = [const.PM25]
-        # self.air_keys = [const.PM25, const.PM10]  # [const.PM25, const.PM10, const.O3]
         if cfg[const.CITY] == const.BJ:
             self.air_keys = [const.PM25, const.PM10, const.O3]
         elif cfg[const.CITY] == const.LD:
             self.air_keys = [const.PM25, const.PM10]  # no O3 for london
 
-        self.path_indicator = '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (self.meo_steps, self.meo_group,
-                                                            self.meo_long_steps, self.meo_long_group,
-                                                            self.future_steps, self.future_group,
-                                                            self.air_steps, self.air_group,
-                                                            self.air_long_steps, self.air_long_group)
-        self._features_path = self.config.get(const.FEATURE_DIR, "") + \
-                             self.config.get(const.FEATURE, "") + self.path_indicator + '_hybrid_'
-        self._test_path = self._features_path + 'tests.csv'
+        self.param_indicator = '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (self.meo_steps, self.meo_group,
+                                                                  self.meo_long_steps, self.meo_long_group,
+                                                                  self.future_steps, self.future_group,
+                                                                  self.air_steps, self.air_group,
+                                                                  self.air_long_steps, self.air_long_group)
+        self.features_path = self.config.get(const.FEATURE_DIR, "") + \
+                             self.feature_indicator + '_' + self.param_indicator + '_hybrid_'
+        self.test_path = self.features_path + 'tests.csv'
 
         # number of file chunks to put features into
         self.chunk_count = self.config.get(const.CHUNK_COUNT, 1)
-
-        self.train_from = self.config.get(const.TRAIN_FROM, '00-01-01 00')
-        self.train_to = self.config.get(const.TRAIN_TO, '00-01-01 00')
-        self.valid_from = self.config.get(const.VALID_FROM, '00-01-01 00')
-        self.valid_to = self.config.get(const.VALID_TO, '00-01-01 00')
-        self.test_from = self.config.get(const.TEST_FROM, '00-01-01 00')
-        self.test_to = self.config.get(const.TEST_TO, '00-01-01 00')
 
         # train / test / validation data holders
         self._exploded = {const.TRAIN: dict(), const.VALID: dict(), const.TEST: dict()}
@@ -116,8 +107,9 @@ class HybridFG(LSTMFG):
                 self.dropna()
                 after_drop = len(self.features)
                 print(' %d feature vectors dropped having NaN' % (before_drop - after_drop))
+                self.features = self.features.sample(frac=self.config[const.FRACTION])
                 self.save_features(chunk_id=next_chunk)
-                total_data_points += len(self.features.index)
+                total_data_points += len(self.features)
                 # go to next chunk
                 features = list()
                 self.features = pd.DataFrame()
@@ -245,24 +237,31 @@ class HybridFG(LSTMFG):
         :param chunk_id:
         :return:
         """
-        features = pd.read_csv(self._features_path + str(chunk_id) + '.csv', sep=";", low_memory=False)
+        train_from = self.config[const.TRAIN_FROM]
+        train_to = self.config[const.TRAIN_TO]
+        print(' Load train set from %s to %s' % (train_from, train_to))
+        features = pd.read_csv(self.features_path + str(chunk_id) + '.csv', sep=";", low_memory=False)
         train_features = times.select(df=features, time_key=const.TIME,
-                                   from_time=self.train_from, to_time=self.train_to)
+                                   from_time=train_from, to_time=train_to)
         self._exploded[const.TRAIN] = self.explode(train_features)
         print('Feature chunk {c} is prepared.'.format(c=chunk_id))
         return self
 
     def load_holdout(self):
-        print(' Load validation set from %s to %s' % (self.valid_from, self.valid_to))
-        print(' Load test set from %s to %s' % (self.test_from, self.test_to))
+        valid_from = self.config.get(const.VALID_FROM, '00-00-00 00')
+        valid_to = self.config.get(const.VALID_TO, '00-00-00 00')
+        test_from = self.config[const.TEST_FROM]
+        test_to = self.config[const.TEST_TO]
+        print(' Load validation set from %s to %s' % (valid_from, valid_to))
+        print(' Load test set from %s to %s' % (test_from, test_to))
         for chunk_id in range(1, self.chunk_count + 1):
-            input_features = pd.read_csv(self._features_path + str(chunk_id) + '.csv', sep=";", low_memory=False)
+            input_features = pd.read_csv(self.features_path + str(chunk_id) + '.csv', sep=";", low_memory=False)
             # extract test and validation data
             features = dict()
             features[const.VALID] = times.select(df=input_features, time_key=const.TIME,
-                                                 from_time=self.valid_from, to_time=self.valid_to)
+                                                 from_time=valid_from, to_time=valid_to)
             features[const.TEST] = times.select(df=input_features, time_key=const.TIME,
-                                                from_time=self.test_from, to_time=self.test_to)
+                                                from_time=test_from, to_time=test_to)
             # add feature to global test data
             if len(self._test.index) == 0:
                 self._test = features[const.TEST]
@@ -354,8 +353,8 @@ class HybridFG(LSTMFG):
             chunk1_id = 2 + iteration % (self.chunk_count - 1)
             chunk2_id = random.randint(1, chunk1_id - 1)
             print(' Shuffling files {id1} <-> {id2} ..'.format(id1=chunk1_id, id2=chunk2_id))
-            chunk1_path = self._features_path + str(chunk1_id) + '.csv'
-            chunk2_path = self._features_path + str(chunk2_id) + '.csv'
+            chunk1_path = self.features_path + str(chunk1_id) + '.csv'
+            chunk2_path = self.features_path + str(chunk2_id) + '.csv'
             chunk1 = pd.read_csv(chunk1_path, sep=";", low_memory=False)
             chunk2 = pd.read_csv(chunk2_path, sep=";", low_memory=False)
             # merge two chunks and shuffle the merged rows
@@ -442,23 +441,42 @@ class HybridFG(LSTMFG):
             Save the extracted features to file
         :return:
         """
-        util.write(self.features, address=self._features_path + str(chunk_id) + '.csv')
+        util.write(self.features, address=self.features_path + str(chunk_id) + '.csv')
         print(len(self.features.index), 'feature vectors are written to file')
 
     def save_test(self, predicted_values):
         augmented_test = util.add_columns(self._test, columns=predicted_values, name_prefix='f')
-        util.write(augmented_test, address=self._test_path)
+        util.write(augmented_test, address=self.test_path)
         print(len(augmented_test.index), 'predicted tests are written to file')
 
     @staticmethod
     def get_size_config(city, key='default'):
         if key == 'default':
             return {
+                const.CITY: city,
                 const.CHUNK_COUNT: 10 if city == const.BJ else 4,
                 # weather of past 36 hours
                 const.MEO_STEPS: 12,
                 const.MEO_GROUP: 3,
                 # weather of past 7for days
+                const.MEO_LONG_STEPS: 7,  # in days
+                # weather of next 48 hours
+                const.FUTURE_STEPS: 8,
+                const.FUTURE_GROUP: 6,
+                # air quality of past 12 hours
+                const.AIR_STEPS: 12,
+                const.AIR_GROUP: 1,
+                # air quality of past 7 days
+                const.AIR_LONG_STEPS: 7,  # in days
+            }
+        elif key == '05-02':
+            return {
+                const.CITY: city,
+                const.CHUNK_COUNT: 6 if city == const.BJ else 2,
+                # weather of past 36 hours
+                const.MEO_STEPS: 12,
+                const.MEO_GROUP: 3,
+                # weather of past 7 days
                 const.MEO_LONG_STEPS: 7,  # in days
                 # weather of next 48 hours
                 const.FUTURE_STEPS: 8,
@@ -476,27 +494,26 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': {
-            # 'PM2.5': True,
-            # 'PM10': True,
-            # 'O3': True,
+            # 'PM2.5': 0.66,
+            # 'PM10': 0.66,
+            'O3': 0.66,
             },
         'LD': {
-            'PM2.5': True,
-            'PM10': True,
+            'PM2.5': 1,
+            'PM10': 1,
             }
         }
     for city in cases:
-        for pollutant, sample_count in cases[city].items():
+        for pollutant, fraction in cases[city].items():
             print(city, pollutant, "started..")
             cfg = {
-                const.CITY: city,
                 const.OBSERVED: config[getattr(const, city + '_OBSERVED')],
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
-                const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.POLLUTANT: pollutant,
+                const.FRACTION: fraction
             }
-            cfg.update(HybridFG.get_size_config(city=city))  # configuration of feature sizes
+            cfg.update(HybridFG.get_size_config(city=city, key='05-02'))  # configuration of feature sizes
             fg = HybridFG(cfg=cfg)
             fg.generate()
             fg.shuffle()  # shuffle generated chunks for data uniformity in learning phase

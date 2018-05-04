@@ -61,9 +61,12 @@ class UtilTest(unittest.TestCase):
     def test_filter_by_time():
         df = pd.DataFrame(data={'time': ['2019-01-01', '2020-01-01']})
         df['time'] = pd.to_datetime(df['time'])
-        filtered = times.select(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
+        selected = times.select(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
         expected = pd.DataFrame(data={'time': [pd.datetime(2019, 1, 1)]})
-        pd_test.assert_frame_equal(filtered, expected)
+        pd_test.assert_frame_equal(selected, expected)
+        excluded = times.exclude(df, 'time', from_time='2019-01-01', to_time='2019-01-30')
+        expected = pd.DataFrame(data={'time': [pd.datetime(2020, 1, 1)]})
+        pd_test.assert_frame_equal(excluded, expected)
 
     def test_group_at(self):
         # test grouping values backward or forward from a given value and given hours unit

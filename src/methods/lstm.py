@@ -18,19 +18,12 @@ class LSTM(Model):
     def __init__(self, cfg, time_steps):
         super(LSTM, self).__init__()
         self.config = cfg
-        self._model = Sequential()
+        self.model = Sequential()
         self.time_steps = time_steps
-        # create tensorflow session
-        tf.reset_default_graph()
-        self._session = tf.Session()
-        self._model = dict()  # contains different points in a tensorflow computation graph
-        self._fg = self._fg = LSTMFG({
-                const.FEATURE_DIR: self.config.get(const.FEATURE_DIR, ""),
-                const.FEATURE: self.config[const.FEATURE],
-        }, time_steps=self.time_steps)
+        self.model = dict()  # contains different points in a tensorflow computation graph
+        self.fg = self.fg = LSTMFG(cfg, time_steps=self.time_steps)
         # Path to save and restore the model
-        self._model_path = self.config[const.MODEL_DIR] + \
-                           self.config[const.FEATURE] + str(self.time_steps) + '_lstm.mdl'
+        self.model_path = self.config[const.MODEL_DIR] + str(self.time_steps) + '_lstm.mdl'
 
     @staticmethod
     def replace_time(data: pd.DataFrame):
@@ -54,7 +47,7 @@ class LSTM(Model):
         data.drop(columns=[const.LAT], inplace=True)
         data.drop(columns=[const.TIME], inplace=True)
 
-    def build(self):
+    def build_model(self):
         num_units = 1
         d_output = 48
         d_input = 1
@@ -83,7 +76,7 @@ class LSTM(Model):
         # prediction = tf.matmul(outputs[-1], out_weights) + out_bias
         prediction = tf.matmul(tf.transpose(outputs)[0], out_weights) + out_bias
 
-        # loss_function
+        # loss_function_smape
         nom = tf.abs(tf.subtract(x=prediction, y=y))
         denom = tf.divide(x=prediction + y, y=2)
         smape = tf.reduce_mean(tf.divide(x=nom, y=denom))
@@ -114,48 +107,48 @@ class LSTM(Model):
             'predictor': prediction
         }
 
-    def train(self):
+    def train_model(self):
         batch_size = 1000
 
         model = self.build()
 
         # summary writer
         summary_writer = tf.summary.FileWriter('logs/lstm/fast1')
-        summary_writer.add_graph(self._session.graph)
+        summary_writer.add_graph(self.session.graph)
 
         # initialize session variables
-        self._session.run(tf.global_variables_initializer())
+        self.session.run(tf.global_variables_initializer())
 
         for i in range(0, 3500):
-            batch_x, batch_y = self._fg.next(batch_size=batch_size, time_steps=self.time_steps)
-            self._session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
+            batch_x, batch_y = self.fg.next(batch_size=batch_size, time_steps=self.time_steps)
+            self.session.run(model['train_step'], feed_dict={model['x']: batch_x, model['y']: batch_y})
             # summary, _ = sess.run([summary_all, train_step], feed_dict={x: batch_x, y: batch_y})
             # summary_writer.add_summary(summary, i)
             if i % 10 == 0:
-                smp, los = self._session.run([model['smape'], model['loss']],
-                                             feed_dict={model['x']: batch_x, model['y']: batch_y})
+                smp, los = self.session.run([model['smape'], model['loss']],
+                                            feed_dict={model['x']: batch_x, model['y']: batch_y})
                 print(i, " Loss ", los, ", SMAPE ", smp)
 
-        self._model = model  # make model accessible to other methods
+        self.model = model  # make model accessible to other methods
 
         # Report SMAPE error on test set
-        test_data, test_label = self._fg.test(time_steps=self.time_steps)
-        print("Testing SMAPE:", self._session.run(model['smape'], feed_dict=
+        test_data, test_label = self.fg.test(time_steps=self.time_steps)
+        print("Testing SMAPE:", self.session.run(model['smape'], feed_dict=
         {model['x']: test_data, model['y']: test_label}))
 
         return self
 
     def test(self):
-        test_data, test_label = self._fg.test(time_steps=self.time_steps)
-        smp = self._session.run(self._model['smape'], feed_dict=
-        {self._model['x']: test_data, self._model['y']: test_label})
+        test_data, test_label = self.fg.test(time_steps=self.time_steps)
+        smp = self.session.run(self.model['smape'], feed_dict=
+        {self.model['x']: test_data, self.model['y']: test_label})
         print("Testing SMAPE:", smp)
         predicted_label = self.predict(test_data)
-        self._fg.save_test(predicted_label)
+        self.fg.save_test(predicted_label)
         return self
 
     def predict(self, x):
-        return self._session.run(self._model['predictor'], feed_dict={self._model['x']: x})
+        return self.session.run(self.model['predictor'], feed_dict={self.model['x']: x})
 
 
 if __name__ == "__main__":
@@ -179,7 +172,6 @@ if __name__ == "__main__":
             cfg = {
                 const.MODEL_DIR: config[const.MODEL_DIR],
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
-                const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.LOSS_FUNCTION: const.MEAN_ABSOLUTE
             }
             lstm = LSTM(cfg, time_steps=48).train().save_model()

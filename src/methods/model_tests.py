@@ -3,6 +3,7 @@ import const
 from src.methods.hybrid import Hybrid
 from src.feature_generators.hybrid_fg import HybridFG
 
+
 def generate():
     config = settings.config[const.DEFAULT]
     cases = {
@@ -23,10 +24,9 @@ def generate():
             # So for all pollutants of london and O3 of beijing we use MAE
             cfg = {
                 const.CITY: city,
-                const.MODEL_DIR: config[const.MODEL_DIR],
+                const.MODEL_DIR: config[const.MODEL_DIR] + "05-03-bests\\",
                 const.FEATURE_DIR: config[const.FEATURE_DIR],
                 const.POLLUTANT: pollutant,
-                const.FEATURE: getattr(const, city + '_' + pollutant.replace('.', '') + '_'),
                 const.STATIONS: config[getattr(const, city + '_STATIONS')],
                 const.LOSS_FUNCTION: const.MEAN_PERCENT,
                 # const.TEST_FROM: '18-04-01 00',
@@ -34,10 +34,11 @@ def generate():
                 # const.TEST_FROM: '18-04-24 23',
                 # const.TEST_TO: '18-04-25 00',
                 const.TEST_FROM: '18-04-01 23',
-                const.TEST_TO: '18-04-29 00',
+                const.TEST_TO: '18-05-01 00',
             }
             # LSTM(cfg, time_steps=48).load_model().test()
-            Hybrid(cfg.update(HybridFG.get_size_config(city=city))).load_model(mode='best').test()
+            cfg.update(HybridFG.get_size_config(city=city, key='05-02'))
+            Hybrid(cfg).load_model(mode='best').test()
             print(city, pollutant, 'done!')
 
 

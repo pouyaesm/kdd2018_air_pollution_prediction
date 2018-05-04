@@ -26,7 +26,6 @@ cases = {
 
 model_basic_cfg = {
     const.MODEL_DIR: config[const.MODEL_DIR] + 'production\\',
-    const.FEATURE: None,
     const.STATIONS: None,
     const.POLLUTANT: None,
     const.LOSS_FUNCTION: const.MEAN_PERCENT,
@@ -41,10 +40,10 @@ model_cfgs = {
     }
 }
 today = times.to_datetime(datetime.utcnow().date())
-# # tomorrow
-# date_border = times.to_datetime(today + timedelta(days=1))
-# 2 days before
-date_border = times.to_datetime(today - timedelta(days=0))
+# tomorrow
+date_border = times.to_datetime(today + timedelta(days=1))
+# # 2 days before
+# date_border = times.to_datetime(today - timedelta(days=2))
 now = datetime.utcnow()
 
 print('Date border:', date_border.strftime(const.T_FORMAT_FULL))
@@ -69,12 +68,13 @@ for city, pollutants in cases.items():
     # Model configuration (city dependant)
     model_cfg = model_cfgs[city]
     model_cfg.update(model_basic_cfg)
-    model_cfg.update(HybridFG.get_size_config(city=city))
+    fg_cfg_basic = HybridFG.get_size_config(city=city, key='05-02')
+    model_cfg.update(fg_cfg_basic)
     model_cfg[const.STATIONS] = config[getattr(const, city + '_STATIONS')]
 
     for pollutant in pollutants:
         fg_cfg = {const.CITY: city, const.POLLUTANT: pollutant}
-        fg_cfg.update(HybridFG.get_size_config(city=city))
+        fg_cfg.update(fg_cfg_basic)
         fg = HybridFG(cfg=fg_cfg)
         # generate features to predict the pollutant on next 48 hours
         features = fg.generate(ts=observed, stations=stations, verbose=False, save=False).get_features()
@@ -88,7 +88,6 @@ for city, pollutants in cases.items():
 
         # initial model to predict
         model_cfg[const.POLLUTANT] = pollutant
-        model_cfg[const.FEATURE] = getattr(const, city + '_' + pollutant.replace('.', '') + '_')
         model = Hybrid(model_cfg).load_model(mode='best')
         predictions = model.predict(x=exploded)
         # test the model if date_border is set before today

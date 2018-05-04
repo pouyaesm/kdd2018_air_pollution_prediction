@@ -422,9 +422,22 @@ def select(df: pd.DataFrame, time_key,
     :return:
     :rtype: pandas.DataFrame
     """
-    filter_index = (df[time_key] >= from_time) & (df[time_key] < to_time)
-    return df.loc[filter_index, :].reset_index(drop=True)
+    select_index = (df[time_key] >= from_time) & (df[time_key] < to_time)
+    return df.loc[select_index, :].reset_index(drop=True)
 
+
+def exclude(df: pd.DataFrame, time_key,
+           from_time='00-00-00 00', to_time='99-01-01 00'):
+    """
+    :param df:
+    :param time_key:
+    :param from_time:
+    :param to_time:
+    :return:
+    :rtype: pandas.DataFrame
+    """
+    exclude_index = ~((df[time_key] >= from_time) & (df[time_key] < to_time))
+    return df.loc[exclude_index, :].reset_index(drop=True)
 
 def one_hot(times: pd.Series, columns, time_format):
     return pd.get_dummies(times.dt.strftime(time_format), columns=columns).T.reindex(columns).T.fillna(0)

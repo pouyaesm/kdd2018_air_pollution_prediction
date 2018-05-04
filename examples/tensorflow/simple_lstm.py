@@ -43,7 +43,7 @@ outputs,_=rnn.static_rnn(lstm_layer,input,dtype="float32")
 #converting last output of dimension [batch_size,num_units] to [batch_size,n_classes] by out_weight multiplication
 prediction=tf.matmul(outputs[-1],out_weights)+out_bias
 
-#loss_function
+#loss_function_smape
 loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction,labels=y))
 #optimization
 opt=tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)

@@ -21,11 +21,13 @@ class LSTMFG:
         self.time_steps = time_steps
         self._train = pd.DataFrame()
         self._test = pd.DataFrame()
+        self.pollutant = self.config[const.POLLUTANT]
+        self.city = self.config[const.CITY]
         self._station_count = 0
         self._valid_stations = pd.DataFrame()
-        self._features_path = self.config.get(const.FEATURE_DIR, "") + \
-                              self.config.get(const.FEATURE, "") + \
-                              str(self.time_steps) + '_lstm.csv'
+        self.feature_indicator = getattr(const, self.city + '_' + self.pollutant.replace('.', ''))
+        self.features_path = self.config.get(const.FEATURE_DIR, "") + \
+                             self.feature_indicator + ('_%d_lstm.csv' % self.time_steps)
 
     def generate(self):
         # load_model data
@@ -84,7 +86,7 @@ class LSTMFG:
         return x, y
 
     def load(self):
-        features = pd.read_csv(self._features_path, sep=";", low_memory=False)
+        features = pd.read_csv(self.features_path, sep=";", low_memory=False)
         self._train = times.select(df=features, time_key=const.TIME, from_time='00-01-01 00', to_time='18-03-29 00')
         # valid = times.select(df=ts, time_key=const.TIME, from_time='17-12-31 23', to_time='17-12-31 23')
         self._test = times.select(df=features, time_key=const.TIME, from_time='18-03-31 00', to_time='18-04-30 23')
@@ -104,12 +106,12 @@ class LSTMFG:
             Save the extracted features to file
         :return:
         """
-        util.write(self.features, address=self._features_path)
+        util.write(self.features, address=self.features_path)
         print(len(self.features.index), 'feature vectors are written to file')
 
     def save_test(self, predicted_values):
         augmented_test = util.add_columns(self._test, columns=predicted_values, name_prefix='f')
-        test_path = self.config[const.FEATURE_DIR] + self.config[const.FEATURE] + \
+        test_path = self.config[const.FEATURE_DIR] + self.feature_indicator + \
                     str(self.time_steps) + '_lstm_tests.csv'
         util.write(augmented_test, address=test_path)
         print(len(augmented_test.index), 'predicted tests are written to file')

@@ -23,15 +23,15 @@ class NN:
         model.add(Dense(units=input_size, input_dim=input_size))
         NN.add_default_layers(model)
         # model.add(Dense(units=int(middle_size), kernel_initializer="uniform"))
-        # NeuralNet.add_default_layers(model)
+        # NeuralNet.default_layer(model)
         # model.add(Dense(units=int(middle_size), kernel_initializer="uniform"))
-        # NeuralNet.add_default_layers(model)
+        # NeuralNet.default_layer(model)
         model.add(Dense(units=int(middle_size)))
         NN.add_default_layers(model)
         # model.add(Dense(units=int(bottle_neck_size)))
-        # NeuralNet.add_default_layers(model)
+        # NeuralNet.default_layer(model)
         # model.add(Dense(units=int(middle_size)))
-        # NeuralNet.add_default_layers(model)
+        # NeuralNet.default_layer(model)
         model.add(Dense(units=output_size))
 
         model.compile(loss=loss, optimizer=Adam(lr=0.01))
@@ -96,10 +96,11 @@ class NN:
         return output
 
     @staticmethod
-    def linear(input_d, output_d, suffix, input=None):
+    def linear(input_d, output_d, suffix, input=None, add_summary=False):
         w = tf.Variable(np.random.normal(size=(input_d, output_d)).astype(np.float32))
         b = tf.Variable(tf.zeros([output_d]))
         z = tf.matmul(input, w) + b
-        tf.summary.histogram('mlp_w_' + suffix, w)
-        tf.summary.histogram('mlp_b_' + suffix, b)
+        if add_summary:
+            tf.summary.histogram('mlp_w_' + suffix, w)
+            tf.summary.histogram('mlp_b_' + suffix, b)
         return tf.identity(z, name="layer")
