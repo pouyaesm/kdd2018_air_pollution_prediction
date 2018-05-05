@@ -6,16 +6,16 @@ from src.feature_generators.hybrid_fg import HybridFG
 
 def generate():
     config = settings.config[const.DEFAULT]
-    sub_folder = "05-03-bests\\"
+    sub_folder = "05-05-bests\\"
     cases = {
         'BJ': [
-             'PM2.5',
-             'PM10',
+             # 'PM2.5',
+             # 'PM10',
              'O3'
         ],
         'LD': [
-            'PM2.5',
-            'PM10'
+            # 'PM2.5',
+            # 'PM10'
         ]
     }
 

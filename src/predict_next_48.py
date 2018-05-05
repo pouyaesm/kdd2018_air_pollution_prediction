@@ -12,6 +12,12 @@ from src.methods.hybrid import Hybrid
 
 config = settings.config[const.DEFAULT]
 
+today = times.to_datetime(datetime.utcnow().date())
+# tomorrow
+date_border = times.to_datetime(today + timedelta(days=1))
+# # 2 days before
+# date_border = times.to_datetime(today - timedelta(days=2))
+
 cases = {
     'BJ': {
         'PM2.5': True,
@@ -39,12 +45,6 @@ model_cfgs = {
         const.CITY: const.LD,
     }
 }
-today = times.to_datetime(datetime.utcnow().date())
-# # tomorrow
-# date_border = times.to_datetime(today + timedelta(days=1))
-# 2 days before
-date_border = times.to_datetime(today - timedelta(days=2))
-now = datetime.utcnow()
 
 print('Date border:', (date_border - timedelta(hours=1)).strftime(const.T_FORMAT_FULL))
 

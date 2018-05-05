@@ -176,8 +176,8 @@ class Hybrid(HybridBase):
             learning_rate = 0.9995 * learning_rate
             self.run(model['train'], model=model, x=train, kp=dropout_keep_prob, train=True, lr=learning_rate)
             # record network summary
-            summary = self.run(model['summary'], model=model, x=train)
-            summary_writer.add_summary(summary, i)
+            # summary = self.run(model['summary'], model=model, x=train)
+            # summary_writer.add_summary(summary, i)
             if i % 10 == 0:
                 train_smp = self.run(model['smape'], model=model, x=train)
                 valid = self._fg.holdout(key=const.VALID)
@@ -230,12 +230,12 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': [
-            'PM2.5',
+            # 'PM2.5',
             # 'PM10',
             # 'O3'
         ],
         'LD': [
-            # 'PM2.5',
+            'PM2.5',
             # 'PM10'
         ]
     }
@@ -259,11 +259,11 @@ if __name__ == "__main__":
                 # The value depends on data volume and model parameters
                 # For more parameters and less data, lower keep-probability is better
                 # Change it until get a similar accuracy for train and test
-                const.DROPOUT: 0.55,
+                const.DROPOUT: 0.66,
                 # more rotates prevents the model from over-fitting on sub-data
                 const.ROTATE: 6 if city == const.BJ else 15,
                 const.EPOCHS: 2500,
-                const.BATCH_SIZE: 1500
+                const.BATCH_SIZE: 3000
             }
             cfg.update(HybridFG.get_size_config(city=city, key='05-02'))  # configuration of feature sizes
             hybrid = Hybrid(cfg).build().train().save_model()
