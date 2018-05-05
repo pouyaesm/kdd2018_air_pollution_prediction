@@ -128,6 +128,9 @@ class PreProcess:
         # Relate observed data to grid ids
         self.obs = self.obs.merge(right=self.stations[[const.ID, const.GID]], on=const.ID)
 
+        # Keep grids for saving
+        self.grids = grids.sort_values(by=[const.GID], ascending=True)
+
         return self
 
     def append_grid(self):
@@ -148,7 +151,6 @@ class PreProcess:
 
         def merge(observed, grid_chunk):
             # Join observed * station_grid * grid
-            grid_chunk.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
             grid_chunk[const.TIME] = pd.to_datetime(grid_chunk[const.TIME], utc=True)
             observed = observed.merge(right=grid_chunk, how='left', on=[const.GID, const.TIME],
                                       suffixes=['_obs', '_grid'])
@@ -182,6 +184,9 @@ class PreProcess:
         # Merge historical grid data chunks with observed data
         for i, chunk in enumerate(iterator):
             print(' merge grid chunk {c}..'.format(c=i + 1))
+            # clean historical values
+            chunk.rename(columns={'stationName': const.GID, 'wind_speed/kph': const.WSPD}, inplace=True)
+            self.clean_weather(chunk)
             self.obs = merge(self.obs, chunk)
 
         # remove possible duplicates due to forecast-live-history data overlap
@@ -234,34 +239,26 @@ class PreProcess:
         grid_live.sort_values(by=[const.GID, const.TIME], inplace=True)
         grid_forecast.sort_values(by=[const.GID, const.TIME], inplace=True)
 
+        # clean live and forecast values
+        self.clean_weather(grid_live)
+        self.clean_weather(grid_forecast)
+
         grid_live.to_csv(self.config[const.GRID_LIVE], sep=';', index=False)
         grid_forecast.to_csv(self.config[const.GRID_FORECAST], sep=';', index=False)
         print(' Grid live / forecast data fetched and saved.')
         return self
 
-    def save(self, append=False):
+    def save(self):
         """
             Save pre-processed data to files given in config
         :return:
         """
-        if append:
-            # Read and append saved observed data
-            self.obs = pd.read_csv(self.config[const.OBSERVED], sep=';', low_memory=True) \
-                .append(other=self.obs, ignore_index=True, verify_integrity=True)
-            self.obs.drop_duplicates(subset=[const.ID, const.TIME], inplace=True)
-
-            # Sort data
-            self.sort()
-
-            # mark missing values
-            self.missing = self.obs.isna().astype(int)
 
         # Write pre-processed data to csv file
         util.write(self.obs, self.config[const.OBSERVED])
         util.write(self.missing, self.config[const.OBSERVED_MISSING])
         self.stations.to_csv(self.config[const.STATIONS], sep=';', index=False)
-        if len(self.grids.index) > 0:
-            self.grids.to_csv(self.config[const.GRIDS], sep=';', index=False)
+        self.grids.to_csv(self.config[const.GRIDS], sep=';', index=False)
         print('Data saved.')
         return self
 
@@ -270,3 +267,18 @@ class PreProcess:
 
     def get_stations(self):
         return self.stations
+
+    @staticmethod
+    def clean_weather(df: pd.DataFrame):
+        """
+        :param df:
+        :return:
+        :rtype: pandas.DataFrame
+        """
+        # Change invalid values to NaN
+        df.loc[df[const.TEMP] > 100, const.TEMP] = np.nan  # max value ~ 40 c
+        df.loc[df[const.PRES] > 10000, const.PRES] = np.nan  # max value ~ 2000
+        df.loc[df[const.WSPD] > 100, const.WSPD] = np.nan  # max value ~ 15 m/s
+        df.loc[df[const.WDIR] > 360, const.WDIR] = -1  # no wind, value = [0, 360] degree
+        df.loc[df[const.HUM] > 100, const.HUM] = np.nan  # value = [0, 100] percent
+        return df

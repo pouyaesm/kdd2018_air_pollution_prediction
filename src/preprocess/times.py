@@ -136,7 +136,18 @@ def group_from(time: list, value: list, index, step, group_hours, whole_group=Fa
     return [value for (key, value) in sorted(aggregate.items())]
 
 
-def running_average(time: list, value: list, group_hours: int, direction = 1, whole_group=False):
+def running_average_df(df: pd.DataFrame, time_key, value_keys: list,
+                       group_hours: int, direction=1, whole_group=False):
+    time_list = df[time_key].tolist()
+    data = {time_key: time_list}
+    for column in value_keys:
+        data[column] = running_average(time_list, df[column].tolist(),
+                                      group_hours, direction, whole_group)
+    df_average = pd.DataFrame(data=data, columns=[time_key] + value_keys)
+    return df_average
+
+
+def running_average(time: list, value: list, group_hours: int, direction=1, whole_group=False):
     """
         Put average values at each index by aggregating values
         from current time group of duration 'hours' until that value
@@ -228,108 +239,6 @@ def group_average(time: list, value: list, group_hours: int):
         aggregate[i] = aggregate[i] / count[i] if count[i] > 0 else 0
 
     return group_time, aggregate, group_lookup, count
-
-# def split(time: list, value: list, hours, step, skip=0, whole_group=False):
-#     """
-#         Split and group 'step' number of averaged values 'hours' apart
-#     :param time: time per value (hour apart)
-#     :param value: assumed to have value[step * t - 1] = average[value[step * (t - 1):step * t]
-#     :param hours: group times into 'hours' hours
-#     :param step: number of group times set for each index
-#     :param skip: ignore offset number of first values
-#     :param whole_group: include the aggregated value of
-#     whole time group for each of its members not just until that member
-#     :return:
-#     """
-#     splits = list()  # step group times per index
-#     size = len(time)
-#     if size != len(value):
-#         return -1
-#     # Calculate running average of values
-#     # that resets by entering a new time group of duration 'hours'
-#     run_average = running_average(time=time, value=value,
-#                                   hours=hours, whole_group=whole_group)
-#     # array of last 'step' averages to be set for on-going index
-#     cur_step = 0
-#     step_values = [0] * step
-#     t_group_pre = round_hour(time[0], hours)  # first time group to begin
-#     for index, value in enumerate(run_average):
-#         t_group = round_hour(time[index], hours)
-#         if t_group != t_group_pre:  # entering new time group
-#             t_group_pre = t_group
-#             if cur_step < step - 1:
-#                 cur_step = min(cur_step + 1, step - 1)
-#             else:
-#                 util.shift(step_values)  # shift array toward 0
-#
-#         # Set running average of current time group on ward
-#         if cur_step < step - 1:
-#             step_values[cur_step:] = [value] * (step - cur_step)
-#         else:
-#             step_values[cur_step] = value
-#
-#         if index < skip:
-#             continue  # skip first 'offset' indices
-#         # Set 'step' count averaged values for current index
-#         splits.append(step_values.copy())
-#     return splits
-
-
-# def split(time: list, value: list, step, group_hours, region=None, whole_group=False):
-#     """
-#         Split and group 'step' number of averaged values 'hours' apart
-#     :param time: time per value (hour apart)
-#     :param value: values corresponding to time
-#     :param step: number of group times set for each index
-#     :param group_hours: group times into 'hours' hours
-#     :param region: region of indices to be considered
-#     :param whole_group: include the aggregated value of
-#     whole time group for each of its members not just until that member
-#     :return:
-#     """
-#     splits = list()  # step group times per index
-#     size = len(time)
-#     if size != len(value):
-#         return -1
-#     # direction is the sign of step
-#     direction = np.sign(step)
-#     # indices to be considered
-#     region = (0, size) if region is None else region
-#     i_range = range(max(region[0], 0), size if region[1] < 0 else region[1])
-#     # Running group average of each index either forward (when step < 0)
-#     # or backward (when step > 0), when whole_group = False
-#     if not whole_group:
-#         run_average = running_average(time, value, group_hours=group_hours,
-#                                       direction=-np.sign(step), whole_group=False)
-#     else:
-#         run_average = []
-#     group_time, average, group_lookup, _ = group_average(time, value, group_hours=group_hours)
-#     group_size = len(group_time)
-#
-#     # duplicated first (for forward) or last (for backward) group average as array of step values
-#     step_values = [average[0 if direction > 0 else -1]] * abs(step)
-#
-#     pre_group_index = group_lookup[round_hour(time[i_range[0]], group_hours)]
-#     for i in i_range:
-#         group_index = group_lookup[round_hour(time[i], group_hours)]
-#         last_index = group_index + step - direction
-#         if step > 0:  # forward grouping
-#             # repeat the last group average if step goes outside the group array
-#             if last_index < group_size:
-#                 step_values
-#             step_values = average[group_index:last_index + 1] \
-#                 if last_index < group_size \
-#                 else average[group_index:] + ([average[-1]] * (last_index - group_size + 1))
-#         else:
-#             # repeat the first group average if step goes outside the group array
-#             step_values = average[last_index:group_index + 1] \
-#                 if last_index > 0 else ([average[0]] * -last_index) + average[0:group_index + 1]
-#         # replace the group average with partial average if the whole group is not required
-#         if not whole_group:
-#             step_values[0 if step > 0 else -1] = run_average[i]
-#
-#         splits.append(step_values)
-#     return splits
 
 
 def split(time: list, value: list, step, group_hours, region=None, whole_group=False):
@@ -438,6 +347,7 @@ def exclude(df: pd.DataFrame, time_key,
     """
     exclude_index = ~((df[time_key] >= from_time) & (df[time_key] < to_time))
     return df.loc[exclude_index, :].reset_index(drop=True)
+
 
 def one_hot(times: pd.Series, columns, time_format):
     return pd.get_dummies(times.dt.strftime(time_format), columns=columns).T.reindex(columns).T.fillna(0)

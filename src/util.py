@@ -217,3 +217,24 @@ def download(url):
             print("\r[%s%s]" % ('=' * done, ' ' * (50 - done)))
         return content
 
+
+def first(list: list, value, comp):
+    """
+        Index of first element that satisfies 'element comp value' relation
+    :param list:
+    :param value:
+    :param comp:
+    :return:
+    """
+    if comp == 'gt':
+        return next(x[0] for x in enumerate(list) if x[1] > value)
+    elif comp == 'ge':
+        return next(x[0] for x in enumerate(list) if x[1] >= value)
+    elif comp == 'lt':
+        return next(x[0] for x in enumerate(list) if x[1] < value)
+    elif comp == 'le':
+        return next(x[0] for x in enumerate(list) if x[1] <= value)
+
+
+def ceildiv(a, b):
+    return -(-a // b)

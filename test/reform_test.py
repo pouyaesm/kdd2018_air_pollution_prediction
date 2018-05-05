@@ -84,3 +84,14 @@ class UtilTest(unittest.TestCase):
         # expected to average from end to start
         average_backward = reform.average(value, -1)
         np_test.assert_array_equal(x=[1.5, 2, 3.5, 4, 5], y=average_backward)
+
+    @staticmethod
+    def test_wind_transform():
+        # transform KDD2018 wind-speed and direction to polar values
+        direction = pd.Series(data=[0, 90, 180])  # -> (90, 0, 270)
+        speed = pd.Series(data=[1, 2, 3])
+        expected_x = [0, 2, 0]
+        expected_y = [1, 0, -3]
+        x, y = reform.wind_transform(speed=speed, direction=direction)
+        np_test.assert_almost_equal(expected_x, x, decimal=5)
+        np_test.assert_almost_equal(expected_y, y, decimal=5)

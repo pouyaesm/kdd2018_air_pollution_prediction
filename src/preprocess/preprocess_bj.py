@@ -86,12 +86,8 @@ class PreProcessBJ(PreProcess):
         aq[const.TIME] = pd.to_datetime(aq[const.TIME], utc=True)
         meo[const.TIME] = pd.to_datetime(meo[const.TIME], utc=True)
 
-        # Change invalid values to NaN
-        meo.loc[meo[const.TEMP] > 100, const.TEMP] = np.nan  # max value ~ 40 c
-        meo.loc[meo[const.PRES] > 10000, const.PRES] = np.nan  # max value ~ 2000
-        meo.loc[meo[const.WSPD] > 100, const.WSPD] = np.nan  # max value ~ 15 m/s
-        meo.loc[meo[const.WDIR] > 360, const.WDIR] = np.nan  # value = [0, 360] degree
-        meo.loc[meo[const.HUM] > 100, const.HUM] = np.nan  # value = [0, 100] percent
+        # Clean weather related columns
+        self.clean_weather(meo)
 
         # Change negative reports of pollutants to NaN
         pollutants = [const.PM25, const.PM10, const.O3]

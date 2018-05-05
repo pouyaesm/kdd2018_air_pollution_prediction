@@ -1,6 +1,7 @@
 import numpy as np
+from numpy import exp
 import pandas as pd
-from math import ceil
+import math
 import const
 
 def group_by_station(ts: pd.DataFrame, stations: pd.DataFrame):
@@ -63,34 +64,6 @@ def split_dual(time: pd.Series, value: pd.Series, unit_x: int, unit_y: int):
     return t, x, y
 
 
-# def split_complex(time: list, value: list, offset: int, unit_x: dict, unit_y: dict):
-#     """
-#         Split data into (time, x, y) tuples
-#         This function is able to construct
-#             x: (past 24h, past 7d), y: (next 24h)
-#             given values: (hour, day), unit_x: (24, 7), unit_y: (24, 0)
-#         Note: 'h' category must exist by default
-#     :param time: time series of dictionaries
-#     :param value: time series of values
-#     :param offset: number of hours skipped from the beginning of time series
-#     :param unit_x: number of units per x split per category (h, 3h, 6h, 12h, d, w)
-#     :param unit_y: number of units per y split per category (h, 3h, 6h, 12h, d, w)
-#     :return:
-#     """
-#     x = dict()  # values of first "unit_x" per category
-#     y = dict()  # values of next "unit_y" per category
-#     avg = dict()  # running averages per category (e.g. average of 3 hours for 3h)
-#     # number of hours determines the overall split count
-#     split_count = len(value) - offset + 1
-#     t = time[0:split_count]
-#     for i in range(0, split_count):
-#         split_at = i + unit_x['h']
-#         # first "hours" values
-#         x.append(value[i:split_at])
-#         # next "hours" values as output
-#         y.append(value[split_at:split_at + unit_y['h']])
-#     return t, x, y
-
 def split(time: list, value: list, step, shift=1, skip=0):
     """
         Split data by unit into (time, value[0:unit]) tuples
@@ -142,7 +115,7 @@ def average(value: list, step: int):
     """
     iteration = range(0, len(value)) if np.sign(step) > 0 else reversed(range(0, len(value)))
     step = abs(step)
-    size = int(ceil(len(value) / (step + 1)))
+    size = int(math.ceil(len(value) / (step + 1)))
     avg = [0] * len(value)  # average of values at index i corresponding to left or right neighbors of i
     aggregate = [0] * size  # sum of values for a time group
     count = [0] * size  # number of values for a time group
@@ -154,3 +127,21 @@ def average(value: list, step: int):
         avg[i] = aggregate[round_i] / count[round_i]
 
     return avg
+
+
+def wind_transform(speed: pd.Series, direction: pd.Series):
+    """
+        0 is from north to south -> 90
+        90 is from east to west -> 180
+    :param speed:
+    :param direction:
+    :return:
+    """
+    def to_polar(r, teta):
+        x = np.multiply(r, np.cos(teta))
+        y = np.multiply(r, np.sin(teta))
+        return x, y
+
+    teta = np.multiply(2 * math.pi, np.divide(np.mod(450 - direction, 360), 360.))
+    x, y = to_polar(speed, teta)
+    return x, y

@@ -113,3 +113,15 @@ class UtilTest(unittest.TestCase):
         reversed_column = util.reverse(matrix, axis=1)
         np_test.assert_array_equal(x=[[2, 1], [4, 3]], y=reversed_column)
         np_test.assert_array_equal(x=[[3, 4], [1, 2]], y=reversed_row)
+
+    def test_first(self):
+        # finding the index of first element having a specific numerical
+        # relation with the given value
+        list = [1, 2, 3]
+        self.assertEqual(first=0, second=util.first(list, 2, comp='lt'))
+        self.assertEqual(first=0, second=util.first(list, 2, comp='le'))
+        self.assertEqual(first=2, second=util.first(list, 2, comp='gt'))
+        self.assertEqual(first=1, second=util.first(list, 2, comp='ge'))
+
+    def test_ceil_div(self):
+        self.assertEqual(first=1.0, second=util.ceildiv(1, 4))
