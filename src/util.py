@@ -77,7 +77,8 @@ def SMAPE(forecast: pd.Series, actual: pd.Series):
         raise ValueError("length forecast {%s} <> {%s} actual" % (forecast.size, actual.size))
     diff = np.abs(np.subtract(forecast, actual))
     avg = (np.abs(actual) + np.abs(forecast)) / 2
-    return (1 / forecast.size) * np.sum(diff / avg)
+    count = np.sum(~np.isnan(actual))
+    return (1 / count) * np.nansum(diff / avg)
 
 
 def drop_columns(df: pd.DataFrame, end_with):

@@ -12,7 +12,7 @@ data = {
     "user_id": "pouyaesm",
     # user_id is your username which can be found on the top-right corner
     # on our website when you logged in.
-    "team_token": "",  # your team_token.
+    "team_token": "9bacf4c07523387e97abe96d236d1cfe16fcde9c371d7cc822b899a40c7553a2",  # your team_token.
     "description": 'Hybrid model with pre-train',  # no more than 40 chars.
     "filename": "submit_" + datetime.utcnow().date().strftime("%Y_%m_%d_%H_%M_%S"),  # your filename
 }
