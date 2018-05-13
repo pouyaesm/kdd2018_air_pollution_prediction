@@ -5,7 +5,7 @@ import settings
 
 config = settings.config[const.DEFAULT]
 
-result_path = config[const.SUBMIT_DIR] + "result_" + datetime.utcnow().strftime("%Y_%m_%d") + ".csv"
+result_path = config[const.SUBMIT_DIR] + "result___" + datetime.utcnow().strftime("%Y_%m_%d") + ".csv"
 files = {'files': open(result_path, 'rb')}
 
 data = {

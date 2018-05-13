@@ -127,6 +127,6 @@ if date_border <= today:
     print('Total SMAPE', smape_total / smape_count)
 
 df = pd.DataFrame(data=results, columns=['test_id', 'PM2.5', 'PM10', 'O3'])
-submit_path = config[const.SUBMIT_DIR] + "result_" + \
+submit_path = config[const.SUBMIT_DIR] + "result___" + \
               (date_border - timedelta(hours=1)).strftime("%Y_%m_%d") + ".csv"
 df.to_csv(submit_path, sep=',', index=False, float_format='%.3f')
