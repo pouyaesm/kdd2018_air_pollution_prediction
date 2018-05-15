@@ -15,7 +15,7 @@ class PreProcessLD(PreProcess):
             Load live observed data from KDD APIs
         :return:
         """
-        aq_url = "https://biendata.com/competition/airquality/ld/2018-02-01-0/2018-06-01-0/2k0d1d8"
+        aq_url = "https://biendata.com/competition/airquality/ld/2018-02-01-0/2018-06-05-0/2k0d1d8"
         aq_live = pd.read_csv(io.StringIO(requests.get(aq_url).content.decode('utf-8')))
         print('Live aQ has been read, count:', len(aq_live))
         return aq_live
