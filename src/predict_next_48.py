@@ -16,7 +16,7 @@ today = times.to_datetime(datetime.utcnow().date())
 # tomorrow
 date_border = times.to_datetime(today + timedelta(days=1))
 # # 2 days before
-# date_border = times.to_datetime(today - timedelta(days=2))
+# date_border = times.to_datetime(today - timedelta(days=5))
 
 cases = {
     'BJ': {
@@ -55,7 +55,7 @@ for city, pollutants in cases.items():
     observed = pd.read_csv(config[getattr(const, city + "_OBSERVED")], sep=';', low_memory=True)
     stations = pd.read_csv(config[getattr(const, city + "_STATIONS")], sep=';', low_memory=True)
     # keep only a necessary time range for feature generation for only predictable stations
-    observed = times.select(df=observed, time_key=const.TIME, from_time='18-04-15 00')
+    observed = times.select(df=observed, time_key=const.TIME, from_time='18-04-20 00')
     observed[const.TIME] = pd.to_datetime(observed[const.TIME], format=const.T_FORMAT)
     observed.sort_values(by=[const.ID, const.TIME], inplace=True)
     # Fill all remaining null values that were to wide to be filled in general pre-processing
