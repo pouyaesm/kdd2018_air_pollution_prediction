@@ -127,6 +127,12 @@ def predict(date_borders=None):
 if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
 
+    today = times.to_datetime(datetime.utcnow().date())
+    # tomorrow
+    date_borders = None
+    # 2 days before
+    date_borders = [times.to_datetime(today - timedelta(days=day)) for day in range(19, 1, -1)]
+
     feature_mode = '05-02'
     model_class = Hybrid
     cases = {
@@ -156,11 +162,5 @@ if __name__ == "__main__":
             const.GRID_COARSE: config[getattr(const, 'LD_GRID_COARSE')],
         }
     }
-
-    today = times.to_datetime(datetime.utcnow().date())
-    # tomorrow
-    date_borders = None
-    # # 2 days before
-    # date_borders = [times.to_datetime(today - timedelta(days=day)) for day in range(18, 1, -1)]
 
     predict(date_borders)
