@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # tomorrow
     date_borders = None
     # 2 days before
-    date_borders = [times.to_datetime(today - timedelta(days=day)) for day in range(19, 1, -1)]
+    date_borders = [times.to_datetime(today - timedelta(days=day)) for day in range(20, 1, -1)]
 
     feature_mode = '05-02'
     model_class = Hybrid
