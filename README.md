@@ -8,7 +8,7 @@ and (4) prediction of pollutants (PM2.5, PM10, O3) for the next 48 hours in Beij
 
 ## Setup
 
-1. Download csv files from [KDD 2018 data repository]((https://biendata.com/competition/kdd_2018/data/)) (requires sign-up),
+1. Download csv files from [KDD 2018 data repository](https://biendata.com/competition/kdd_2018/data/) (requires sign-up),
 1. Install required packages including `tensorflow` and `keras` (for deep learning), `selenium` (for web crawling),
 1. Copy `default.config.ini` to `config.ini`,
 1. Download `chromedriver.exe` for web crawling, and set the address
