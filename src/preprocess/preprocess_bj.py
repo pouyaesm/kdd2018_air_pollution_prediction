@@ -23,8 +23,8 @@ class PreProcessBJ(PreProcess):
             Load live observed data from KDD APIs
         :return:
         """
-        aq_url = "https://biendata.com/competition/airquality/bj/2018-02-01-0/2018-06-05-0/2k0d1d8"
-        meo_url = "https://biendata.com/competition/meteorology/bj/2018-02-01-0/2018-06-05-0/2k0d1d8"
+        aq_url = self.config[const.BJ_AQ_URL]
+        meo_url = self.config[const.BJ_MEO_URL]
         aq_live = pd.read_csv(io.StringIO(util.download(aq_url)))
         print(' Live aQ has been read, count:', len(aq_live.index))
         aq_latest = external.get_beijing_aq_latest()

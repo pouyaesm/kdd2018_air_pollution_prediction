@@ -148,7 +148,7 @@ if __name__ == "__main__":
     }
 
     model_basic_cfg = {
-        const.MODEL_DIR: config[const.MODEL_DIR] + 'production\\',
+        const.MODEL_DIR: config[const.MODEL_DIR],
         const.STATIONS: None,
         const.POLLUTANT: None,
         const.LOSS_FUNCTION: const.MEAN_PERCENT,

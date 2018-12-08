@@ -262,7 +262,7 @@ if __name__ == "__main__":
                 const.DROPOUT: 0.66,
                 # more rotates prevents the model from over-fitting on sub-data
                 const.ROTATE: 6 if city == const.BJ else 15,
-                const.EPOCHS: 2500,
+                const.EPOCHS: 500,
                 const.BATCH_SIZE: 3000
             }
             cfg.update(HybridFG.get_size_config(city=city, key='05-02'))  # configuration of feature sizes

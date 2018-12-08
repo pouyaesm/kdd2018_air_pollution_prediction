@@ -14,13 +14,16 @@ def fetch():
         const.MEO_LIVE: config[const.BJ_MEO_LIVE],
         const.GRID_URL: config[const.BJ_GRID_URL],
         const.GRID_LIVE: config[const.BJ_GRID_LIVE],
-        const.GRID_FORECAST: config[const.BJ_GRID_FORECAST]
+        const.GRID_FORECAST: config[const.BJ_GRID_FORECAST],
+        const.BJ_AQ_URL: config[const.BJ_AQ_URL],
+        const.BJ_MEO_URL: config[const.BJ_MEO_URL],
     }
     config_ld = {
         const.AQ_LIVE: config[const.LD_AQ_LIVE],
         const.GRID_URL: config[const.LD_GRID_URL],
         const.GRID_LIVE: config[const.LD_GRID_LIVE],
-        const.GRID_FORECAST: config[const.LD_GRID_FORECAST]
+        const.GRID_FORECAST: config[const.LD_GRID_FORECAST],
+        const.LD_AQ_URL: config[const.LD_AQ_URL],
     }
 
     pre_process_bj = PreProcessBJ(config_bj)

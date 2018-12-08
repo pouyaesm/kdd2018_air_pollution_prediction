@@ -494,13 +494,13 @@ if __name__ == "__main__":
     config = settings.config[const.DEFAULT]
     cases = {
         'BJ': {
-            # 'PM2.5': 0.66,
-            # 'PM10': 0.66,
-            'O3': 0.66,
+            'PM2.5': 0.1,
+            'PM10': 0.1,
+            'O3': 0.1,
             },
         'LD': {
-            'PM2.5': 1,
-            'PM10': 1,
+            'PM2.5': 0.1,
+            'PM10': 0.1,
             }
         }
     for city in cases:

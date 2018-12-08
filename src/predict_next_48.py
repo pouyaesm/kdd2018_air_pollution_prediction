@@ -20,18 +20,18 @@ date_border = times.to_datetime(today + timedelta(days=1))
 
 cases = {
     'BJ': {
-        'PM2.5': True,
-        'PM10': True,
-        'O3': True,
+        # 'PM2.5': True,
+        # 'PM10': True,
+        # 'O3': True,
     },
     'LD': {
         'PM2.5': True,
-        'PM10': True,
+        # 'PM10': True,
     }
 }
 
 model_basic_cfg = {
-    const.MODEL_DIR: config[const.MODEL_DIR] + 'production\\',
+    const.MODEL_DIR: config[const.MODEL_DIR],
     const.STATIONS: None,
     const.POLLUTANT: None,
     const.LOSS_FUNCTION: const.MEAN_PERCENT,

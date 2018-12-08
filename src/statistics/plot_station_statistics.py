@@ -13,11 +13,13 @@ config = settings.config[const.DEFAULT]
 # Turn off plot interactive mode to let IDE display the plots
 plt.interactive(False)
 
-# Read cleaned data
-df = pd.read_csv(config[const.BJ_OBSERVED], delimiter=';', low_memory=False)
+# Read stations
+stations = pd.read_csv(config[const.BJ_STATIONS], delimiter=';', low_memory=False)
 
-# Select unique stations
-stations = df.drop_duplicates(subset=['station_id']).reset_index()
+# Read cleaned data, append station data
+df = pd.read_csv(config[const.BJ_OBSERVED], delimiter=';', low_memory=False)
+df = df.merge(stations, how='left', on=[const.ID], suffixes=['_obs', '_st'])
+df = util.merge_columns(df, main='_obs', auxiliary='_st')
 
 fig, axes = plt.subplots()
 

@@ -33,7 +33,8 @@ config_ld = {
     const.GRID_DATA: config[const.LD_GRID_DATA],
     const.GRID_LIVE: config[const.LD_GRID_LIVE],
     const.GRID_FORECAST: config[const.LD_GRID_FORECAST],
-    const.GRIDS: config[const.LD_GRIDS]
+    const.GRIDS: config[const.LD_GRIDS],
+    const.LD_AQ_URL: config[const.LD_AQ_URL],
 }
 
 # fetch and save live data

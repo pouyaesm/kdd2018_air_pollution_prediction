@@ -16,13 +16,13 @@ feature_dir = config[const.FEATURE_DIR]
 suffix = '_12_3_7_24_8_6_12_1_7_24_hybrid_tests.csv'
 paths = {
     'BJ': {
-        'PM2.5': feature_dir + const.BJ_PM25 + suffix,
-        'PM10': feature_dir + const.BJ_PM10 + suffix,
-        'O3': feature_dir + const.BJ_O3 + suffix,
+        # 'PM2.5': feature_dir + const.BJ_PM25 + suffix,
+        # 'PM10': feature_dir + const.BJ_PM10 + suffix,
+        # 'O3': feature_dir + const.BJ_O3 + suffix,
     },
     'LD': {
         'PM2.5': feature_dir + const.LD_PM25 + suffix,
-        'PM10': feature_dir + const.LD_PM10 + suffix,
+        # 'PM10': feature_dir + const.LD_PM10 + suffix,
     }
 }
 

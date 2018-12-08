@@ -40,8 +40,10 @@ class PreProcess:
         while True:
             # url prepared for a given UTC time
             url = template % (city_code, dt.month, dt.day, dt.hour)
-            forecast = pd.read_csv(io.StringIO(util.download(url)))
+            forecast = pd.read_csv(io.StringIO(util.download(url)), error_bad_lines=False)
             if len(forecast) > 0:
+                if 'id' not in forecast.columns:
+                    return None     # API returned error
                 forecast.rename(columns={'forecast_time': const.TIME, 'station_id': const.GID}, inplace=True)
                 forecast.drop(columns=['id'], inplace=True)
                 print(' Forecast grid data fetched from', dt.strftime(const.T_FORMAT))
@@ -237,14 +239,19 @@ class PreProcess:
 
         # sort dataframes for readability
         grid_live.sort_values(by=[const.GID, const.TIME], inplace=True)
-        grid_forecast.sort_values(by=[const.GID, const.TIME], inplace=True)
+        if grid_forecast is not None:
+            grid_forecast.sort_values(by=[const.GID, const.TIME], inplace=True)
 
         # clean live and forecast values
         self.clean_weather(grid_live)
-        self.clean_weather(grid_forecast)
+        if grid_forecast is not None:
+            self.clean_weather(grid_forecast)
 
         grid_live.to_csv(self.config[const.GRID_LIVE], sep=';', index=False)
-        grid_forecast.to_csv(self.config[const.GRID_FORECAST], sep=';', index=False)
+        if grid_forecast is not None:
+            grid_forecast.to_csv(self.config[const.GRID_FORECAST], sep=';', index=False)
+        else:   # save live grid as forecast to avoid further failures
+            grid_live.to_csv(self.config[const.GRID_FORECAST], sep=';', index=False)
         print(' Grid live / forecast data fetched and saved.')
         return self
 
