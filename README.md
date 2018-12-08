@@ -54,27 +54,27 @@ and (4) prediction of pollutants (PM2.5, PM10, O3) for the next 48 hours in Beij
 
    1. Data pre-process
         1. Run `src/preprocess/preprocess_all.py` to create the cleaned data sets in your pre-specified addresses,
-    1. Data visualization
+   1. Data visualization
         1. Run scripts in `src/statistics` to gain basic insights about value distributions, time series and geographical positions
         1. Change `BJ_*` to `LD_*` for London data
-    1. Feature generation
+   1. Feature generation
         1. Go to main method of `src/feature_generators/hybrid_fg.py`,
         1. Uncomment desired (city-pollutant, sample rate) pairs in `cases` variable (all pairs are eventually required). Higher sample rate, larger data,
         1. Run the script
-    1. Model training
+   1. Model training
         1. Go to `src/methods/lstm_pre_train.py`
         1. Run the script; simple LSTM models are pre-trained for all pollutants.
         These models are fed (unchanged) to the final model for better performance,
         1. Go to main method of `src/methods/hybrid.py`,
         1. Uncomment desired city-pollutant,
         1. Run the script; best model so far will be saved automatically
-    1. Model testing
+   1. Model testing
         1. Go to `src/methods/model_tests.py`,
         1. Uncomment desired city-pollutant, set a time interval in `TEST_FROM` and `TEST_TO`,
         1. Run the script; SMAPE score will be printed.
         1. Go to `src/methods/model_investigate.py`,
         1. Run the script to see SMAPE score per station sorted and geographically visualized.
-    1. Prediction
+   1. Prediction
         1. Go to `src/predict_next_48.py`
         1. Change `timedelta` if you wish to predict previous 48 hours,
         1. Run the script
