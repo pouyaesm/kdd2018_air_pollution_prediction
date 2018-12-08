@@ -1,5 +1,5 @@
-# project config file, data, and outputted models #
-###################################################
+# project config, data, and outputted models #
+##############################################
 data
 features
 config.ini
